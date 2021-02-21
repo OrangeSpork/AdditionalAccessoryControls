@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>39d38e8d-454f-4adc-b3e8-d89ad616af21</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>AdditionalAccessoryControls</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryBoneEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryHooks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessorySlotData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlsController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlsPlugin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryUI.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryVisibilityRules.cs" />
+  </ItemGroup>
+</Project>
