@@ -951,7 +951,7 @@ namespace AdditionalAccessoryControls
 
         public void HandleVisibilityRulesForSlot(AdditionalAccessorySlotData slot, bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false, bool ruleUpdate = false)
         {
-            if (slot.VisibilityRules == null || hidingAccessoriesForPicture)
+            if (slot.VisibilityRules == null || hidingAccessoriesForPicture || (startup && KKAPI.Studio.StudioAPI.InsideStudio))
             {
                 return;
             }    
@@ -963,7 +963,7 @@ namespace AdditionalAccessoryControls
 #endif
             }
 
-            if (startup && HasStartupVisibilityRule(slot) && !accessory && !KKAPI.Studio.StudioAPI.InsideStudio)
+            if (startup && HasStartupVisibilityRule(slot) && !accessory)
             {
 #if DEBUG
                 Log.LogInfo($"Hiding Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to startup rules");
