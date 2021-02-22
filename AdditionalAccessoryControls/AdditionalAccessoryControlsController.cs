@@ -175,11 +175,14 @@ namespace AdditionalAccessoryControls
 #endif
 
             if (AdditionalAccessoryControlsPlugin.TrimExcessAccessorySlotsOnSave.Value)
-            {
+            {                
                 slotData = TrimMoreAccessorySlots(SlotData);
 
-                GameObject slot1obj = GameObject.Find("CharaCustom/CustomControl/CanvasMain/SubMenu/SubMenuAccessory/Scroll View/Viewport/Content/Category/CategoryTop/Slot01");
-                slot1obj.GetComponent<UI_ButtonEx>().onClick.Invoke();
+                if (AccessoriesApi.SelectedMakerAccSlot > slotData.Length)
+                {
+                    GameObject slot1obj = GameObject.Find("CharaCustom/CustomControl/CanvasMain/SubMenu/SubMenuAccessory/Scroll View/Viewport/Content/Category/CategoryTop/Slot01");
+                    slot1obj.GetComponent<UI_ButtonEx>().onClick.Invoke();
+                }
 
     
 #if DEBUG
@@ -1097,7 +1100,7 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                     Log.LogInfo($"Handling Link for Slot: {IsAccessoryShowing(slot.SlotNumber)} linked to Slot: {IsAccessoryShowing(linkSlotNumber)}");
 #endif
-                    if (!checkAccessorialStateMatch(slot, slotData[linkSlotNumber]))
+                    if (!CheckAccessorialStateMatch(slot, slotData[linkSlotNumber]))
                     {
                         ChaControl.SetAccessoryState(slot.SlotNumber, IsAccessoryShowing(linkSlotNumber));
                         dirty = true;
@@ -1116,7 +1119,7 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                     Log.LogInfo($"Handling Inverse Link for Slot: {IsAccessoryShowing(slot.SlotNumber)} linked to Slot: {IsAccessoryShowing(linkSlotNumber)}");
 #endif                 
-                    if (checkAccessorialStateMatch(slot, slotData[linkSlotNumber]))
+                    if (CheckAccessorialStateMatch(slot, slotData[linkSlotNumber]))
                     {
                         ChaControl.SetAccessoryState(slot.SlotNumber, !IsAccessoryShowing(linkSlotNumber));
                         dirty = true;
@@ -1129,7 +1132,7 @@ namespace AdditionalAccessoryControls
             return dirty;
         }
 
-        private bool checkAccessorialStateMatch(AdditionalAccessorySlotData firstSlot, AdditionalAccessorySlotData secondSlot)
+        private bool CheckAccessorialStateMatch(AdditionalAccessorySlotData firstSlot, AdditionalAccessorySlotData secondSlot)
         {
             return IsAccessoryShowing(firstSlot.SlotNumber) == IsAccessoryShowing(secondSlot.SlotNumber);
         }
