@@ -37,6 +37,8 @@ namespace AdditionalAccessoryControls
         public AccessoryControlWrapper<MakerToggle, bool> AutoMatchHairColorWrapper { get; set; }
         public AdditionalAccessoryUI UI { get; set; }
 
+        public bool MakerControlsRegistered { get; set;}
+
 
         // More Accessories
         public static object MoreAccessoriesInstance { get; set; }
@@ -76,11 +78,11 @@ namespace AdditionalAccessoryControls
             // Hooks
             AdditionalAccessoryHooks.PatchMe();
             
-        }
+        }        
 
         // Do Work on Entering/Leaving Maker
-        private void SetupMakerControls(object sender, RegisterCustomControlsEvent eventData)
-        {
+        public void SetupMakerControls(object sender, RegisterCustomControlsEvent eventData)
+        {            
             CharacterAccessoryControlWrapper = MakerAPI.AddEditableAccessoryWindowControl<MakerToggle, bool>(new MakerToggle(new MakerCategory("Accessory", ""), "Character Accessory", this));
             AutoMatchHairColorWrapper = MakerAPI.AddEditableAccessoryWindowControl<MakerToggle, bool>(new MakerToggle(new MakerCategory("Accessory", ""), "Match Hair Color on Coord Load", this));
 
@@ -89,11 +91,12 @@ namespace AdditionalAccessoryControls
 
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Show", null, this)).OnClick.AddListener(ShowAccessory);
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Hide", null, this)).OnClick.AddListener(HideAccessory);
-
+            MakerControlsRegistered = true;
         }
 
         private void CleanupMakerControls(object sender, EventArgs args)
         {
+            MakerControlsRegistered = false;
             AccessoriesApi.SelectedMakerAccSlotChanged -= UpdateVisibilityRulesUI;
             AdditionalAccessoryUI.Hide();
         }

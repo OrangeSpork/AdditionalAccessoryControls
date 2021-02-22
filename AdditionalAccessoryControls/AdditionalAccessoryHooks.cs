@@ -1,4 +1,7 @@
 ﻿using AIChara;
+#if AI
+using AIProject;
+#endif
 using CharaCustom;
 using HarmonyLib;
 using Manager;
@@ -172,6 +175,7 @@ namespace AdditionalAccessoryControls
             }
         }
 
+#if HS2
         private static bool HStartInit = false;
         private static List<ChaControl> dirtyChars = new List<ChaControl>();
 
@@ -287,6 +291,98 @@ namespace AdditionalAccessoryControls
                 AdditionalAccessoryControlsPlugin.Instance.Log.LogWarning($"Exception in AACP Hook, Visibility Updates Not Thrown. {e.Message} {e.StackTrace}");
             }
         }
+#endif
+
+#if AI
+        private static List<ChaControl> hActors = new List<ChaControl>();
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSceneManager), "HsceneInit", new Type[] { typeof(AgentActor[]) })]
+        static void HSceneInitAgent(AgentActor[] agent)
+        {
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo("HScene Init Multi-Agent");
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Sending event for: {Singleton<Manager.Map>.Instance.Player?.ChaControl?.fileParam?.fullname}");
+#endif
+            Singleton<Manager.Map>.Instance.Player.ChaControl.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(hstart: true);
+            hActors.Add(Singleton<Manager.Map>.Instance.Player.ChaControl);
+            foreach (AgentActor a in agent)
+            {
+                if (a != null)
+                {
+#if DEBUG
+                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Sending event for: {a?.ChaControl?.fileParam?.fullname}");
+#endif
+                    a.ChaControl.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(hstart: true);
+                    hActors.Add(a.ChaControl);
+                }
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSceneManager), "HsceneInit", new Type[] { typeof(MerchantActor), typeof(AgentActor) })]
+        static void HSceneInitMerchant(MerchantActor Merchant, AgentActor agent)
+        {
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo("HScene Init Merchant");
+#endif
+            Singleton<Manager.Map>.Instance.Player.ChaControl.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(hstart: true);
+            hActors.Add(Singleton<Manager.Map>.Instance.Player.ChaControl);
+            if (agent != null)
+            {
+#if DEBUG
+                AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Sending event for: {agent?.ChaControl?.fileParam?.fullname}");
+#endif
+                agent.ChaControl.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(hstart: true);
+                hActors.Add(agent.ChaControl);
+            }
+            if (Merchant != null)
+            {
+#if DEBUG
+                AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Sending event for: {Merchant?.ChaControl?.fileParam?.fullname}");
+#endif
+                Merchant.ChaControl.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(hstart: true);
+                hActors.Add(Merchant.ChaControl);
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProcADV")]
+        static void HSceneEnd(HSceneManager __instance)
+        {
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo("End HScene");
+#endif            
+            foreach (ChaControl actor in hActors)
+            {
+                if (actor != null)
+                {
+#if DEBUG
+                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Sending event for: {actor?.fileParam?.fullname}");
+#endif
+                    actor.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(hend: true);
+                }
+            }
+        }
+
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSceneManager), "EndHScene")]
+        static void HSceneClose(HSceneManager __instance)
+        {
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo("Close HScene");
+#endif            
+            foreach (ChaControl actor in hActors)
+            {
+                if (actor != null)
+                {
+#if DEBUG
+                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Sending event for: {actor?.fileParam?.fullname}");
+#endif
+                    actor.gameObject.GetComponent<AdditionalAccessoryControlsController>().HandleVisibilityRules(startup: true);
+                }
+            }
+            hActors.Clear();
+        }
+
+#endif
 
 
     }

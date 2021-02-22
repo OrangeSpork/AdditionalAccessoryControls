@@ -44,14 +44,30 @@ namespace AdditionalAccessoryControls
         {
             AccessoriesApi.AccessoryKindChanged += UpdateCharacterAccessories;
             AccessoriesApi.AccessoryTransferred += UpdateCharacterAccessories;
+#if DEBUG
+            Log.LogInfo("Accessory Handlers Registered");
+#endif
             if (MakerAPI.InsideMaker)
             {
-                AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper.ValueChanged += UpdateCharacterAccessorialToggle;
-                AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper.ValueChanged += UpdateMatchHairAccessorialToggle;
+#if DEBUG
+                Log.LogInfo("Start Maker Handlers Registration");
+#endif
+                StartCoroutine(RegisterMakerControls());                                
             }
             boneEffect = new AdditionalAccessoryBoneEffect();
             ChaControl.GetComponent<BoneController>().AddBoneEffect(boneEffect);
             base.OnEnable();
+        }
+
+        IEnumerator RegisterMakerControls()
+        {
+            yield return new WaitUntil(() => AdditionalAccessoryControlsPlugin.Instance.MakerControlsRegistered);
+
+            AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper.ValueChanged += UpdateCharacterAccessorialToggle;
+            AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper.ValueChanged += UpdateMatchHairAccessorialToggle;
+#if DEBUG
+            Log.LogInfo("Maker Handlers Registered");
+#endif
         }
 
         // De-Register Handlers

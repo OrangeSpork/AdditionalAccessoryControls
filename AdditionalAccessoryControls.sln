@@ -7,9 +7,12 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "AdditionalAccessoryControls
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HS2_AdditionalAccessoryControls", "HS2_AdditionalAccessoryControls\HS2_AdditionalAccessoryControls.csproj", "{D2D1C373-14DA-46BB-88FD-31D3ED065EF0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI_AdditionalAccessoryControls", "AI_AdditionalAccessoryControls\AI_AdditionalAccessoryControls.csproj", "{C5414959-7A31-43B2-9DB9-75319130A7BF}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		AdditionalAccessoryControls\AdditionalAccessoryControls.projitems*{39d38e8d-454f-4adc-b3e8-d89ad616af21}*SharedItemsImports = 13
+		AdditionalAccessoryControls\AdditionalAccessoryControls.projitems*{c5414959-7a31-43b2-9db9-75319130a7bf}*SharedItemsImports = 4
 		AdditionalAccessoryControls\AdditionalAccessoryControls.projitems*{d2d1c373-14da-46bb-88fd-31d3ed065ef0}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +24,10 @@ Global
 		{D2D1C373-14DA-46BB-88FD-31D3ED065EF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2D1C373-14DA-46BB-88FD-31D3ED065EF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2D1C373-14DA-46BB-88FD-31D3ED065EF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5414959-7A31-43B2-9DB9-75319130A7BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5414959-7A31-43B2-9DB9-75319130A7BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5414959-7A31-43B2-9DB9-75319130A7BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5414959-7A31-43B2-9DB9-75319130A7BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
