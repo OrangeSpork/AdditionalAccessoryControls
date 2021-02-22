@@ -181,7 +181,8 @@ namespace AdditionalAccessoryControls
                 if (AccessoriesApi.SelectedMakerAccSlot > slotData.Length)
                 {
                     GameObject slot1obj = GameObject.Find("CharaCustom/CustomControl/CanvasMain/SubMenu/SubMenuAccessory/Scroll View/Viewport/Content/Category/CategoryTop/Slot01");
-                    slot1obj.GetComponent<UI_ButtonEx>().onClick.Invoke();
+                    if (slot1obj != null)
+                        slot1obj.GetComponent<UI_ButtonEx>().onClick.Invoke();
                 }
 
     
