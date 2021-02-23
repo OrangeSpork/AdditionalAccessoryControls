@@ -50,6 +50,14 @@ namespace AdditionalAccessoryControls
             {
                 return "(" + Rule.ToString() + ":" + Modifier + ")";
             }
+
+            public AdditionalAccessoryVisibilityRuleData Copy()
+            {
+                AdditionalAccessoryVisibilityRuleData copy = new AdditionalAccessoryVisibilityRuleData();
+                copy.Rule = this.Rule;
+                copy.Modifier = this.Modifier;
+                return copy;
+            }
         }
 
         [IgnoreMember]
@@ -222,8 +230,11 @@ namespace AdditionalAccessoryControls
             copy.AccessoryName = source.AccessoryName;
             copy.PartsInfo = source.PartsInfo;
             copy.AutoMatchBackHairColor = source.AutoMatchBackHairColor;
-            copy.VisibilityRules = source.VisibilityRules;
-
+            copy.VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
+            foreach (AdditionalAccessoryVisibilityRuleData data in source.VisibilityRules)
+            {
+                copy.VisibilityRules.Add(data.Copy());
+            }               
             return copy;
         }
 

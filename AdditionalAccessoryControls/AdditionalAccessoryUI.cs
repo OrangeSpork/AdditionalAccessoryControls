@@ -280,11 +280,13 @@ namespace AdditionalAccessoryControls
                                 {
                                     CurrentSlot.ClearVisibilityRule(AdditionalAccessoryVisibilityRules.ACCESSORY_LINK);
                                     CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.ACCESSORY_LINK, accessorySlotString, true);
+                                    SendRulesUpdateNotification();
                                 }
                                 else if (CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.ACCESSORY_INVERSE_LINK))
                                 {
                                     CurrentSlot.ClearVisibilityRule(AdditionalAccessoryVisibilityRules.ACCESSORY_INVERSE_LINK);
                                     CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.ACCESSORY_INVERSE_LINK, accessorySlotString, true);
+                                    SendRulesUpdateNotification();
                                 }
                             }                            
                         }

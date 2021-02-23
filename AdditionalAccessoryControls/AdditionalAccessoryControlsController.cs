@@ -222,6 +222,9 @@ namespace AdditionalAccessoryControls
                         byte[] coordinateAccessorySlotBinary = (byte[])coordinateData.data["coordinateAccessoryData"];
                         if (coordinateAccessorySlotBinary != null && coordinateAccessorySlotBinary.Length > 0)
                         {
+#if DEBUG
+                            Log.LogInfo($"Found Coordinate Extended Data {coordinateAccessorySlotBinary.Length}");
+#endif
                             coordinateSlotData = MessagePackSerializer.Deserialize<AdditionalAccessorySlotData[]>(coordinateAccessorySlotBinary);
 
                             // Inflate PartInfo Data
@@ -239,8 +242,17 @@ namespace AdditionalAccessoryControls
                         }
                         else
                         {
+#if DEBUG
+                            Log.LogInfo("No Coordinate Extended Data Binary");
+#endif
                             coordinateSlotData = null;
                         }
+                    }
+                    else
+                    {
+#if DEBUG
+                        Log.LogInfo("Coordinate Data Missing");
+#endif
                     }
                 }
 
@@ -954,19 +966,29 @@ namespace AdditionalAccessoryControls
             return destination;
         }
 
+        private bool runningVisibilityRules = false;
         public void HandleVisibilityRules(bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false)
-        {           
-            if (slotData == null || hidingAccessoriesForPicture)
-                return;
-            
-            foreach (AdditionalAccessorySlotData slot in slotData)
+        {            
+            try
             {
-                HandleVisibilityRulesForSlot(slot, startup, hstart, hend, clothes, accessory);
-            }
+                if (slotData == null || hidingAccessoriesForPicture || runningVisibilityRules)
+                    return;
 
-            HandleAccessorialSlotLinks();
-            HandleHairVisibilityRules();
-            HandleBodyVisibilityRules();
+                runningVisibilityRules = true;
+
+                foreach (AdditionalAccessorySlotData slot in slotData)
+                {
+                    HandleVisibilityRulesForSlot(slot, startup, hstart, hend, clothes, accessory);
+                }
+
+                HandleAccessorialSlotLinks();
+                HandleHairVisibilityRules();
+                HandleBodyVisibilityRules();
+            } catch (Exception e)
+            {
+                Log.LogWarning($"Unable to process visibility rules, accessories may not be in desired state {e.Message} {e.StackTrace}");
+            }
+            runningVisibilityRules = false;
         }
 
         public void HandleVisibilityRulesForSlot(AdditionalAccessorySlotData slot, bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false, bool ruleUpdate = false)
