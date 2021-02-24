@@ -363,6 +363,9 @@ namespace AdditionalAccessoryControls
                     i++;
                 }
 
+#if DEBUG
+                Log.LogInfo("Coordinate Load - Setting all Accessories ON");
+#endif
                 ChaControl.SetAccessoryStateAll(true);
                 HandleVisibilityRules(startup: true);
             }
@@ -538,7 +541,13 @@ namespace AdditionalAccessoryControls
                     buildFromAccessories(AccessoriesApi.GetAccessoryObjects(ChaControl));
                 }
 
-                ChaControl.SetAccessoryStateAll(true);
+                if (!KKAPI.Studio.StudioAPI.InsideStudio)
+                {
+#if DEBUG
+                    Log.LogInfo("Initial Load - All Accessories ON");
+#endif
+                    ChaControl.SetAccessoryStateAll(true);
+                }
                 HandleVisibilityRules(startup: true);
             }
             catch (Exception e)
