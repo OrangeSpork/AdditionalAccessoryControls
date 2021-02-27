@@ -231,10 +231,13 @@ namespace AdditionalAccessoryControls
             copy.PartsInfo = source.PartsInfo;
             copy.AutoMatchBackHairColor = source.AutoMatchBackHairColor;
             copy.VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
-            foreach (AdditionalAccessoryVisibilityRuleData data in source.VisibilityRules)
+            if (source.VisibilityRules != null)
             {
-                copy.VisibilityRules.Add(data.Copy());
-            }               
+                foreach (AdditionalAccessoryVisibilityRuleData data in source.VisibilityRules)
+                {
+                    copy.VisibilityRules.Add(data.Copy());
+                }
+            }
             return copy;
         }
 

@@ -6,6 +6,7 @@ using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using MessagePack;
+using Studio;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -721,6 +722,52 @@ namespace AdditionalAccessoryControls
         private static FieldInfo showField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetNestedType("AccessoryObject", AccessTools.all), "show");
         private static FieldInfo objField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetNestedType("AccessoryObject", AccessTools.all), "obj");
         private static MethodInfo updateMakerUIMethod = AccessTools.Method(AdditionalAccessoryControlsPlugin.MoreAccessoriesType, "UpdateMakerUI");
+        private static MethodInfo updateStudioUIMethod = AccessTools.Method(AdditionalAccessoryControlsPlugin.MoreAccessoriesType, "UpdateStudioUI");
+        private static MethodInfo updateHUIMethod = AccessTools.Method(AdditionalAccessoryControlsPlugin.MoreAccessoriesType, "UpdateHUI");
+
+        private static FieldInfo charaInfoPanelField = AccessTools.Field(typeof(ManipulatePanelCtrl), "charaPanelInfo");
+        private static FieldInfo mpCharCtrlField = AccessTools.Field(typeof(ManipulatePanelCtrl).GetNestedType("CharaPanelInfo", AccessTools.all), "m_MPCharCtrl");
+        private static FieldInfo stateInfoField = AccessTools.Field(typeof(MPCharCtrl), "stateInfo");
+        private static FieldInfo accessoriesInfoField = AccessTools.Field(typeof(MPCharCtrl).GetNestedType("StateInfo", AccessTools.all), "accessoriesInfo");
+
+        // Really Illusion, you don't bind your own char controls?
+        private void UpdateStudioUI()
+        {
+            var charaPanelInfo = charaInfoPanelField.GetValue(Studio.Studio.Instance.manipulatePanelCtrl);
+            MPCharCtrl mpCharCtrl = (MPCharCtrl)mpCharCtrlField.GetValue(charaPanelInfo);
+            var stateInfo = stateInfoField.GetValue(mpCharCtrl);
+            MPCharCtrl.AccessoriesInfo accessoriesInfo = (MPCharCtrl.AccessoriesInfo)accessoriesInfoField.GetValue(stateInfo);
+            foreach (OCIChar chara in KKAPI.Studio.StudioAPI.GetSelectedCharacters())
+            {
+                if (chara != null)
+                {
+                    accessoriesInfo.UpdateInfo(chara);
+                }
+            }            
+        }
+
+        private void UpdateMoreAccessorialUI()
+        {
+            try
+            {
+                if (KKAPI.Maker.MakerAPI.InsideAndLoaded)
+                {
+                    updateMakerUIMethod.Invoke(AdditionalAccessoryControlsPlugin.MoreAccessoriesInstance, null);
+                }
+                else if (KKAPI.Studio.StudioAPI.InsideStudio)
+                {
+                    updateStudioUIMethod.Invoke(AdditionalAccessoryControlsPlugin.MoreAccessoriesInstance, null);
+                }
+                else if (Manager.HSceneManager.isHScene)
+                {
+                    updateHUIMethod.Invoke(AdditionalAccessoryControlsPlugin.MoreAccessoriesInstance, null);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.LogWarning($"Unable to update More Accessorial UI, may be out of sync. {e.Message} {e.StackTrace}");
+            }
+        }
 
         private bool GetMoreAccessorySlotStatus(int slot)
         {
@@ -993,6 +1040,12 @@ namespace AdditionalAccessoryControls
                 HandleAccessorialSlotLinks();
                 HandleHairVisibilityRules();
                 HandleBodyVisibilityRules();
+
+                UpdateMoreAccessorialUI();
+                if (KKAPI.Studio.StudioAPI.InsideStudio)
+                {
+                    UpdateStudioUI();
+                }
             } catch (Exception e)
             {
                 Log.LogWarning($"Unable to process visibility rules, accessories may not be in desired state {e.Message} {e.StackTrace}");
