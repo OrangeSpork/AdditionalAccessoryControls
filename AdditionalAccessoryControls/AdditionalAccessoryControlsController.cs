@@ -709,7 +709,7 @@ namespace AdditionalAccessoryControls
 
 
             UnHideCharacterAccessories();
-            HandleVisibilityRules(clothes: true);
+            HandleVisibilityRules(clothes: true, startup: true);
         }
 
         // More Accessory Hooks
