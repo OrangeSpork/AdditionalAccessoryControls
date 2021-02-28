@@ -72,16 +72,20 @@ namespace AdditionalAccessoryControls
         }
 
         // De-Register Handlers
-        protected override void OnDestroy()
+        protected void OnDisable()
         {
             AccessoriesApi.AccessoryKindChanged -= UpdateCharacterAccessories;
             AccessoriesApi.AccessoryTransferred -= UpdateCharacterAccessories;
-            if (MakerAPI.InsideMaker)
-            {
+#if DEBUG
+            Log.LogInfo("Accessory Handlers De-Registered");
+#endif
+            if (AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper != null)
                 AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper.ValueChanged -= UpdateCharacterAccessorialToggle;
+            if (AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper != null) 
                 AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper.ValueChanged -= UpdateMatchHairAccessorialToggle;
-            }
-            base.OnDestroy();
+#if DEBUG
+            Log.LogInfo("Maker Handlers De-Registration");
+#endif
         }
 
 
@@ -122,7 +126,6 @@ namespace AdditionalAccessoryControls
             {
                 return;
             }
-
             if (args.GetType().Equals(typeof(AccessorySlotEventArgs)))
             {
                 AccessorySlotEventArgs slotArgs = (AccessorySlotEventArgs)args;
