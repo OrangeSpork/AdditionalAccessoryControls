@@ -269,7 +269,11 @@ namespace AdditionalAccessoryControls
                 // First copy the coordinate data
                 List<AdditionalAccessorySlotData> newSlotData = new List<AdditionalAccessorySlotData>();
                 newSlotData.AddRange(coordinateSlotData == null ? buildFromAccessories(AccessoriesApi.GetAccessoryObjects(ChaControl)) : coordinateSlotData);
+#if DEBUG
+                Log.LogInfo("Merge Coordinate Data");
+                dumpSlotData(newSlotData.ToArray());
 
+#endif
                 List<AdditionalAccessorySlotData> charaSlots = new List<AdditionalAccessorySlotData>();
 
                 // Copy character accessories from character slots
@@ -296,7 +300,7 @@ namespace AdditionalAccessoryControls
                             }
                             else
                             {
-                                AddMoreAccessoriesPart(slot.PartsInfo, newSlotNumber);
+                                AddMoreAccessoriesPart(slot.PartsInfo, newSlotNumber - 20);
                                 AdditionalAccessorySlotData newSlot = AdditionalAccessorySlotData.Copy(slot, newSlotNumber, true);
                                 newSlotData[newSlotNumber] = newSlot;
                                 charaSlots.Add(newSlot);
@@ -327,11 +331,6 @@ namespace AdditionalAccessoryControls
                     }
                 }
 
-#if DEBUG
-                    Log.LogInfo("New Slot Data");
-                dumpSlotData();
-#endif
-
                 // Trigger game to update
                 if (KKAPI.Maker.MakerAPI.InsideAndLoaded)
                 {
@@ -344,6 +343,8 @@ namespace AdditionalAccessoryControls
                 }
 
 #if DEBUG
+                Log.LogInfo("New Slot Data");
+                dumpSlotData();
                 dumpCurrentAccessories();
 #endif
 
@@ -949,6 +950,22 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                     Log.LogInfo($"Before Parts List Size: {partsList.Count} Objects List Size: {objectList.Count}");
 #endif
+                    if (slotNumber >= partsList.Count || slotNumber >= objectList.Count)
+                    {
+                        while (slotNumber >= partsList.Count)
+                        {
+                            partsList.Add(partsInfo);
+
+                        }
+                        while (slotNumber >= objectList.Count)
+                        {
+                            objectList.Add(accessoryObjectType.GetConstructor(Type.EmptyTypes).Invoke(null));
+                        }
+#if DEBUG
+                    Log.LogInfo($"Augmented Parts List Size: {partsList.Count} Objects List Size: {objectList.Count}");
+#endif
+                    }
+
                     if (slotNumber == -1)
                     {
                         partsList.Add(partsInfo);
@@ -1657,6 +1674,11 @@ namespace AdditionalAccessoryControls
 
         // Debug Helpers
         private void dumpSlotData()
+        {
+            dumpSlotData(slotData);
+        }
+
+        private void dumpSlotData(AdditionalAccessorySlotData[] slotData)
         {
             Log.LogInfo("SLOT DATA...");
             if (slotData == null || slotData.Length == 0)
