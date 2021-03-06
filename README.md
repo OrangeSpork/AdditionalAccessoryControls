@@ -32,6 +32,18 @@ Opens up a sub-dialog with a variety of visibility rules that can be applied to 
 **Hair/Body Rules**:\
    *Hair Rules*: When this accessory is visible the following hair parts are made invisible. Use to swap in and out a hair part with a wig, or hide hair under a helmet or hood.\
    *Body Rules*: When this accessory is visible the following body parts are scaled to 0. Use this to prevent elf ears clipping through helmets, hands popping through some glove items, etc.
+
+# Coordinate Visibility Override Rules
+
+Accessed from the toggle button in the Plugin Settings section of the menu (right side).
+
+Adds options to help deal with some common collisions where character accessory visibility rules don't work as desired when loaded into some coordinates.
+
+**Slot Suppression Rules**: Setting one of these suppresses rules based on this slot for firing for this coordinate. An example might be an open bra shouldn't suppress nipple accessories even though it's in an on state. 
+
+**Slot Overrides**: These allow you to map one slot or even specific slot/state combinations to other slots or slot/states. Use this when you have an item in a non-standard slot, for example a glove in a pantyhose slot. Mapping the pantyhose to gloves allows accessory rules for gloves to work as desired for this item.
+
+Note: Overriding a slot means it no longer counts as it's original slot (so as in the prior example, any rules for pantyhose would not fire as it would be considered a glove). If it is desired that the slot count as another slot AND as itself, simply override the slot to itself in addition to other targets. A use case would be tops that should fire bot rules, as the cover the bot, but aren't flagged as covering the bot in the item flags. Override top->top AND top->bottom means that the item will now fire rules for for accessories with either top or bottom visibility rules set.
    
 # Show/Hide Button
 
