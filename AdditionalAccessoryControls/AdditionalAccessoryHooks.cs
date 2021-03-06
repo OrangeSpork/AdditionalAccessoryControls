@@ -175,6 +175,40 @@ namespace AdditionalAccessoryControls
             }
         }
 
+        [HarmonyPrefix, HarmonyPatch(typeof(ChaFileCoordinate), "LoadFile", new Type[] { typeof(System.IO.Stream), typeof(int) })]
+        static void OnCoordLoadPrefix(ChaFileCoordinate __instance)
+        {
+            try
+            { 
+                ChaControl owner = null;
+                foreach (KeyValuePair<int, ChaControl> pair in Character.Instance.dictEntryChara)
+                {
+                    if (pair.Value.nowCoordinate == __instance || pair.Value.chaFile.coordinate == __instance)
+                    {
+                        owner = pair.Value;
+                        break;
+                    }
+                }
+
+                if (owner == null)
+                {
+                    return;
+                }
+
+                // Find Controller
+                AdditionalAccessoryControlsController aacController = owner.gameObject.GetComponent<AdditionalAccessoryControlsController>();
+                if (aacController != null)
+                {
+                    aacController.MaterialEditorHelper.UpdateOnCoordinateLoadSnapshot();
+                    aacController.DBHelper.UpdateOnCoordinateLoadSnapshot();
+                }
+            }
+            catch (Exception e)
+            {
+                AdditionalAccessoryControlsPlugin.Instance.Log.LogWarning($"Exception in AACP Hook, Character Accessories may not be restored after this load. {e.Message} {e.StackTrace}");
+            }
+        }
+
 #if HS2
         private static bool HStartInit = false;
         private static List<ChaControl> dirtyChars = new List<ChaControl>();

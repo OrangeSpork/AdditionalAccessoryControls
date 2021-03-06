@@ -6,6 +6,8 @@ namespace AdditionalAccessoryControls
 {
     public enum AdditionalAccessoryVisibilityRules
     {
+        NONE = 0,
+
         // General Rules
         STARTUP = 1,
         H_START=2,
@@ -30,7 +32,7 @@ namespace AdditionalAccessoryControls
         NOSE = 31,
         EAR = 32,
         HAND = 33,
-        FOOT = 34
+        FOOT = 34        
     }
 
     public enum AdditionalAccessoryVisibilityRulesModifiers
@@ -55,7 +57,9 @@ namespace AdditionalAccessoryControls
         HAIR_EXT =33,
 
         LEFT = 40,
-        RIGHT = 41
+        RIGHT = 41,
+
+        ALL = 50
 
     }
 }

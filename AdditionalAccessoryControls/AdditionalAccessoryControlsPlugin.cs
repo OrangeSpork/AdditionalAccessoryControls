@@ -7,10 +7,11 @@ using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
+using KKAPI.Maker.UI.Sidebar;
 using System;
 using System.Collections.Generic;
 using System.Text;
-
+using UniRx;
 
 namespace AdditionalAccessoryControls
 {
@@ -23,7 +24,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.0.2";
+        public const string Version = "1.0.3";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 
@@ -35,7 +36,7 @@ namespace AdditionalAccessoryControls
         // UX References
         public AccessoryControlWrapper<MakerToggle, bool> CharacterAccessoryControlWrapper { get; set; }
         public AccessoryControlWrapper<MakerToggle, bool> AutoMatchHairColorWrapper { get; set; }
-        public AdditionalAccessoryUI UI { get; set; }
+        public SidebarToggle CoordinateRulesToggle { get; set; }
 
         public bool MakerControlsRegistered { get; set;}
 
@@ -71,6 +72,7 @@ namespace AdditionalAccessoryControls
 
             // UI
             gameObject.AddComponent<AdditionalAccessoryUI>();
+            gameObject.AddComponent<AdditionalCoordinateUI>();
             CharacterApi.RegisterExtraBehaviour<AdditionalAccessoryControlsController>(GUID);
             MakerAPI.MakerStartedLoading += SetupMakerControls;
             MakerAPI.MakerExiting += CleanupMakerControls;
@@ -91,6 +93,13 @@ namespace AdditionalAccessoryControls
 
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Show", null, this)).OnClick.AddListener(ShowAccessory);
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Hide", null, this)).OnClick.AddListener(HideAccessory);
+
+            CoordinateRulesToggle = MakerAPI.AddSidebarControl(new SidebarToggle("Coordinate Visibility Rules", false, this));
+            CoordinateRulesToggle.ValueChanged.Subscribe(b =>
+            {
+                ShowCoordinateRulesGUI(b);
+            });
+
             MakerControlsRegistered = true;
         }
 
@@ -98,7 +107,22 @@ namespace AdditionalAccessoryControls
         {
             MakerControlsRegistered = false;
             AccessoriesApi.SelectedMakerAccSlotChanged -= UpdateVisibilityRulesUI;
+
             AdditionalAccessoryUI.Hide();
+        }
+
+        private void ShowCoordinateRulesGUI(bool toggleState)
+        {
+#if DEBUG
+            Log.LogInfo($"Show Coordinate Rules GUI {toggleState}");
+#endif
+            if (!toggleState)
+                AdditionalCoordinateUI.Hide();
+            else
+            { 
+                if (MakerAPI.InsideAndLoaded)
+                    AdditionalCoordinateUI.Show();
+            }
         }
 
         private void ShowAccessory()

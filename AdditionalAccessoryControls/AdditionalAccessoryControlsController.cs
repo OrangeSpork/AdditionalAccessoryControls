@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using UniRx;
 using UnityEngine;
+using static AdditionalAccessoryControls.AdditionalAccessoryCoordinateData;
 using static AdditionalAccessoryControls.AdditionalAccessorySlotData;
 
 namespace AdditionalAccessoryControls
@@ -29,10 +30,15 @@ namespace AdditionalAccessoryControls
         private AdditionalAccessorySlotData[] slotData;  // Mirrors character accessory data
         private AdditionalAccessorySlotData[] coordinateSlotData; // Additional data from coordinate set, merged to slot data during load process
 
+        public AdditionalAccessoryCoordinateData CoordinateOverrideData { get; set; }
+
         public AdditionalAccessorySlotData[] SlotData // Always enable exhibitionism
         {
             get => slotData;
         }
+
+        public AdditionalAccessoryMaterialEditorHelper MaterialEditorHelper { get; set; }
+        public AdditionalAccessoryDynamicBonesHelper DBHelper { get; set; }
 
         private AdditionalAccessoryBoneEffect boneEffect;
 
@@ -43,6 +49,9 @@ namespace AdditionalAccessoryControls
         // Register Handlers
         protected override void OnEnable()
         {
+            MaterialEditorHelper = new AdditionalAccessoryMaterialEditorHelper(ChaControl);
+            DBHelper = new AdditionalAccessoryDynamicBonesHelper(ChaControl);
+
             AccessoriesApi.AccessoryKindChanged += UpdateCharacterAccessories;
             AccessoriesApi.AccessoryTransferred += UpdateCharacterAccessories;
 #if DEBUG
@@ -57,6 +66,9 @@ namespace AdditionalAccessoryControls
             }
             boneEffect = new AdditionalAccessoryBoneEffect();
             ChaControl.GetComponent<BoneController>().AddBoneEffect(boneEffect);
+
+            CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
+
             base.OnEnable();
         }
 
@@ -161,6 +173,18 @@ namespace AdditionalAccessoryControls
                 AccessoryTransferEventArgs transferArgs = (AccessoryTransferEventArgs)args;
 
                 AddOrUpdateSlot(transferArgs.DestinationSlotIndex, AdditionalAccessorySlotData.Copy(slotData[transferArgs.SourceSlotIndex], transferArgs.DestinationSlotIndex));
+
+                ChaFileAccessory.PartsInfo accessoryParts = null;
+                if (transferArgs.DestinationSlotIndex < 20)
+                {
+                    accessoryParts = ChaControl.nowCoordinate.accessory.parts[transferArgs.DestinationSlotIndex];
+                }
+                else
+                {
+                    accessoryParts = GetMoreAccessorialPartInfo(transferArgs.DestinationSlotIndex - 20);
+                }
+
+                slotData[transferArgs.DestinationSlotIndex].PartsInfo = accessoryParts;
                 AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper.SetValue(transferArgs.DestinationSlotIndex, slotData[transferArgs.SourceSlotIndex].CharacterAccessory);
                 AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper.SetValue(transferArgs.DestinationSlotIndex, slotData[transferArgs.SourceSlotIndex].AutoMatchBackHairColor);
 #if DEBUG
@@ -198,6 +222,7 @@ namespace AdditionalAccessoryControls
 
             var data = new PluginData();
             data.data["accessoryData"] = MessagePackSerializer.Serialize(slotData);
+            data.data["overrideData"] = MessagePackSerializer.Serialize(CoordinateOverrideData);
             SetExtendedData(data);            
         }
 
@@ -251,9 +276,25 @@ namespace AdditionalAccessoryControls
 #endif
                             coordinateSlotData = null;
                         }
+                        byte[] coordinateOverrideBinary = coordinateData.data.ContainsKey("coordinateOverrideData") ? (byte[])coordinateData.data["coordinateOverrideData"] : null;
+                        if (coordinateOverrideBinary != null && coordinateOverrideBinary.Length > 0)
+                        {
+#if DEBUG
+                            Log.LogInfo($"Found Coordinate Override Data {coordinateOverrideBinary.Length}");
+#endif
+                            CoordinateOverrideData = MessagePackSerializer.Deserialize<AdditionalAccessoryCoordinateData>(coordinateOverrideBinary);
+#if DEBUG
+                            Log.LogInfo($"Loaded Coordinate Override Data {CoordinateOverrideData}");
+#endif
+                        }
+                        else
+                        {
+                            CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
+                        }
                     }
                     else
                     {
+                        CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
 #if DEBUG
                         Log.LogInfo("Coordinate Data Missing");
 #endif
@@ -275,6 +316,7 @@ namespace AdditionalAccessoryControls
 
 #endif
                 List<AdditionalAccessorySlotData> charaSlots = new List<AdditionalAccessorySlotData>();
+                List<Tuple<int, int>> movedSlots = new List<Tuple<int, int>>();
 
                 // Copy character accessories from character slots
                 foreach (AdditionalAccessorySlotData slot in slotData)
@@ -288,6 +330,7 @@ namespace AdditionalAccessoryControls
                             AdditionalAccessorySlotData newSlot = AdditionalAccessorySlotData.Copy(slot, newSlotNumber, true);
                             newSlotData.Add(newSlot);
                             charaSlots.Add(newSlot);
+                            movedSlots.Add(new Tuple<int, int>(slot.SlotNumber, newSlotNumber));
                         }
                         else
                         {
@@ -297,6 +340,7 @@ namespace AdditionalAccessoryControls
                                 AdditionalAccessorySlotData newSlot = AdditionalAccessorySlotData.Copy(slot, newSlotNumber, true);
                                 newSlotData[newSlotNumber] = newSlot;
                                 charaSlots.Add(newSlot);
+                                movedSlots.Add(new Tuple<int, int>(slot.SlotNumber, newSlotNumber));
                             }
                             else
                             {
@@ -304,6 +348,7 @@ namespace AdditionalAccessoryControls
                                 AdditionalAccessorySlotData newSlot = AdditionalAccessorySlotData.Copy(slot, newSlotNumber, true);
                                 newSlotData[newSlotNumber] = newSlot;
                                 charaSlots.Add(newSlot);
+                                movedSlots.Add(new Tuple<int, int>(slot.SlotNumber, newSlotNumber));
                             }
                         }
                     }
@@ -342,6 +387,10 @@ namespace AdditionalAccessoryControls
                     ChaControl.ChangeAccessory(true);
                 }
 
+                // Update related plugins that I just broke
+                MaterialEditorHelper.UpdateOnCoordinateLoadApply(coordinate, movedSlots);
+                DBHelper.UpdateOnCoordinateLoadApply(coordinate, movedSlots);
+
 #if DEBUG
                 Log.LogInfo("New Slot Data");
                 dumpSlotData();
@@ -372,7 +421,9 @@ namespace AdditionalAccessoryControls
                 Log.LogInfo("Coordinate Load - Setting all Accessories ON");
 #endif
                 ChaControl.SetAccessoryStateAll(true);
-                HandleVisibilityRules(startup: true);
+
+                // Wait a few frames for other players to finish up
+                StartCoroutine(StartHandleVisibilityRules());
             }
             catch (Exception e)
             {
@@ -381,10 +432,17 @@ namespace AdditionalAccessoryControls
             loading = false;
         }
 
-
         // Nothing to do on this one
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
+        }
+
+        private IEnumerator StartHandleVisibilityRules()
+        {
+            yield return null;
+            yield return null;
+            yield return null;
+            HandleVisibilityRules(startup: true);
         }
 
 
@@ -412,12 +470,14 @@ namespace AdditionalAccessoryControls
                 dumpCoordinateSlotData();
 #endif
 
+                List<int> slotsRemoved = new List<int>();
                 // Remove character accessories
                 foreach (AdditionalAccessorySlotData coordinateSlot in coordinateSlotData)
                 {
                     if (coordinateSlot.CharacterAccessory)
                     {
-                        coordinateSlot.MakeEmpty();
+                        slotsRemoved.Add(coordinateSlot.SlotNumber);
+                        coordinateSlot.MakeEmpty();                        
                     }
                 }
 
@@ -436,10 +496,14 @@ namespace AdditionalAccessoryControls
                 Log.LogInfo("AFTER");
                 dumpCoordinateSlotData();
 #endif
+                
+                MaterialEditorHelper.UpdateOnCoordinateSave(coordinate, slotsRemoved);
+                DBHelper.UpdateOnCoordinateSave(coordinate, slotsRemoved);
 
                 // And Save
                 var data = new PluginData();
                 data.data["coordinateAccessoryData"] = MessagePackSerializer.Serialize(coordinateSlotData);
+                data.data["coordinateOverrideData"] = MessagePackSerializer.Serialize(CoordinateOverrideData);
                 SetCoordinateExtendedData(coordinate, data);
             }
             catch (Exception e)
@@ -455,7 +519,6 @@ namespace AdditionalAccessoryControls
             loading = true;
             try
             {
-
                 CharacterLoadFlags flags = MakerAPI.GetCharacterLoadFlags();
 #if DEBUG
                 Log.LogInfo($"Reload: {maintainState}");
@@ -506,9 +569,26 @@ namespace AdditionalAccessoryControls
                             // No Data, instantiate from current accessories
                             slotData = buildFromAccessories(AccessoriesApi.GetAccessoryObjects(ChaControl));
                         }
+                        byte[] overrideDataBinary = data.data.ContainsKey("overrideData") ? (byte[])data.data["overrideData"] : null;
+                        if (overrideDataBinary != null && overrideDataBinary.Length > 0)
+                        {
+                           
+#if DEBUG
+                            Log.LogInfo($"Found Coordinate Override Data {overrideDataBinary.Length}");
+#endif
+                            CoordinateOverrideData = MessagePackSerializer.Deserialize<AdditionalAccessoryCoordinateData>(overrideDataBinary);
+#if DEBUG
+                            Log.LogInfo($"Loaded Coordinate Override Data {CoordinateOverrideData}");
+#endif                           
+                        }
+                        else
+                        {
+                            CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
+                        }
                     }
                     else
                     {
+                        CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
                         slotData = buildFromAccessories(AccessoriesApi.GetAccessoryObjects(ChaControl));
 #if DEBUG
                         Log.LogInfo("Extended Data Missing");                        
@@ -516,6 +596,8 @@ namespace AdditionalAccessoryControls
                         dumpSlotData();
 #endif
                     }
+
+                    
                 }
 
                 // If we have data, sync the UI checkboxes
@@ -701,6 +783,9 @@ namespace AdditionalAccessoryControls
 
                 originalMACCPartsList = null;
             }
+
+            MaterialEditorHelper.RestoreSnapshot(chaFileCoordinate);
+            DBHelper.RestoreSnapshot(chaFileCoordinate);
 
             // Trigger game to update
             ChaControl.AssignCoordinate();
@@ -1437,95 +1522,56 @@ namespace AdditionalAccessoryControls
             return false;
         }
 
+        public List<AdditionalAccessoryVisibilityRuleData> FindAllClothesRules(AdditionalAccessorySlotData slot)
+        {
+            return slot.VisibilityRules == null ? new List<AdditionalAccessoryVisibilityRuleData>() : slot.VisibilityRules.Where(rule => ((int)rule.Rule) >= 10 && ((int)rule.Rule) < 20).ToList();
+        }
+
         // Visibility Rule Handlers
         public bool VisibilityClothesCheckResult(AdditionalAccessorySlotData slot)
         {
             bool result = false;
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.TOP))
+            foreach (AdditionalAccessoryVisibilityRuleData rule in FindAllClothesRules(slot))
             {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.TOP);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.top);
-                }
-                result = result || slotResult;
+                result = result || CheckClothingSlotRule(rule);
             }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.BOT))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.BOT);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.bot);
-                }
-                result = result || slotResult;
-            }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.INNER_TOP))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.INNER_TOP);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.inner_t);
-                }
-                result = result || slotResult;
-            }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.INNER_BOT))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.INNER_BOT);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.inner_b);
-                }
-                result = result || slotResult;
-            }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.PANTYHOSE))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.PANTYHOSE);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.panst);
-                }
-                result = result || slotResult;
-            }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.GLOVE))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.GLOVE);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.gloves);
-                }
-                result = result || slotResult;
-            }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.SOCK))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.SOCK);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.socks);
-                }
-                result = result || slotResult;
-            }
-            if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.SHOE))
-            {
-                List<AdditionalAccessoryVisibilityRuleData> rulesData = slot.FindAllVisibilityRules(AdditionalAccessoryVisibilityRules.SHOE);
-                bool slotResult = false;
-                foreach (AdditionalAccessoryVisibilityRuleData ruleData in rulesData)
-                {
-                    slotResult = slotResult || CheckClothesState(ruleData.Modifier, ChaFileDefine.ClothesKind.shoes);
-                }
-                result = result || slotResult;
-            }
+            return result;           
+        }
 
+        // Check Clothing Slot Rule Result - Including Suppression and Override Rules
+        public bool CheckClothingSlotRule(AdditionalAccessoryVisibilityRuleData ruleData)
+        {
+            bool result = false;
+
+            // Handle Base Result - Unless we are overridden to some other slot
+            if (!CoordinateOverrideData.IsOverrideSource(ruleData.Rule, ruleData.Modifier))
+                result = result || (!CoordinateOverrideData.IsSuppressed(ruleData.Rule, ruleData.Modifier) && CheckClothesState(ruleData.Modifier, ClothesSlotMapping[ruleData.Rule], ruleData.Rule));
+
+            List<AdditionalAccessoryCoordinateRuleData> overrideTargetRules = CoordinateOverrideData.GetOverrideTargets(ruleData.Rule, ruleData.Modifier);
+            overrideTargetRules.AddRange(CoordinateOverrideData.GetOverrideTargets(ruleData.Rule, AdditionalAccessoryVisibilityRulesModifiers.ALL));
+
+            // Handle Overrides
+            foreach (AdditionalAccessoryCoordinateRuleData overrideRule in overrideTargetRules) {
+                AdditionalAccessoryVisibilityRules checkRule = overrideRule == null ? ruleData.Rule : overrideRule.Rule;
+                string checkModifier = overrideRule == null ? ruleData.Modifier : overrideRule.RuleModifier;
+
+                // If this is an ALL->ALL, we want that to act like ON->ON, HALF->HALF, OFF->OFF rather than *->*
+                if (String.Equals(overrideRule.RuleModifier, ((int)AdditionalAccessoryVisibilityRulesModifiers.ALL).ToString()) && String.Equals(overrideRule.OverrideRuleModifier, ((int)AdditionalAccessoryVisibilityRulesModifiers.ALL).ToString()))
+                {
+                    checkModifier = ruleData.Modifier;
+                }
+#if DEBUG
+                if (overrideRule != null)
+                {
+                    Log.LogInfo($"Evaluating Using Override, Base: {ruleData} CheckRule: {checkRule} CheckMod: {checkModifier} Override: {overrideRule}");
+                }
+#endif
+                result = result || (!CoordinateOverrideData.IsSuppressed(checkRule, checkModifier) && CheckClothesState(checkModifier, ClothesSlotMapping[checkRule], ruleData.Rule));
+            }
             return result;
         }
 
-        private bool CheckClothesState(string mod, ChaFileDefine.ClothesKind kind)
+        private bool CheckClothesState(string mod, ChaFileDefine.ClothesKind kind, AdditionalAccessoryVisibilityRules baseRule)
         {            
             switch (Enum.Parse(typeof(AdditionalAccessoryVisibilityRulesModifiers), mod))
             {
@@ -1534,11 +1580,21 @@ namespace AdditionalAccessoryControls
                         return true;
                     break;
                 case AdditionalAccessoryVisibilityRulesModifiers.HALF:
-                    if (ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 1)
+                    if ( (baseRule == AdditionalAccessoryVisibilityRules.GLOVE || baseRule == AdditionalAccessoryVisibilityRules.SOCK || baseRule == AdditionalAccessoryVisibilityRules.SHOE) && ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 2)
+                        return true;
+                    else if (ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 1)
                         return true;
                     break;
                 case AdditionalAccessoryVisibilityRulesModifiers.OFF:
                     if (ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 2)
+                        return true;
+                    break;
+                case AdditionalAccessoryVisibilityRulesModifiers.ALL:
+                    if (
+                        (ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 2)
+                        || (ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 1)
+                        || (ChaControl.IsClothesStateKind((int)kind) && ChaControl.fileStatus.clothesState[(int)kind] == 0)
+                        )
                         return true;
                     break;
 
@@ -1746,5 +1802,17 @@ namespace AdditionalAccessoryControls
                 i++;
             }
         }
+
+        private static readonly Dictionary<AdditionalAccessoryVisibilityRules, ChaFileDefine.ClothesKind> ClothesSlotMapping = new Dictionary<AdditionalAccessoryVisibilityRules, ChaFileDefine.ClothesKind>
+        {
+            { AdditionalAccessoryVisibilityRules.TOP, ChaFileDefine.ClothesKind.top },
+            { AdditionalAccessoryVisibilityRules.BOT, ChaFileDefine.ClothesKind.bot },
+            { AdditionalAccessoryVisibilityRules.INNER_TOP, ChaFileDefine.ClothesKind.inner_t },
+            { AdditionalAccessoryVisibilityRules.INNER_BOT, ChaFileDefine.ClothesKind.inner_b },
+            { AdditionalAccessoryVisibilityRules.PANTYHOSE, ChaFileDefine.ClothesKind.panst },
+            { AdditionalAccessoryVisibilityRules.GLOVE, ChaFileDefine.ClothesKind.gloves },
+            { AdditionalAccessoryVisibilityRules.SHOE, ChaFileDefine.ClothesKind.shoes },
+            { AdditionalAccessoryVisibilityRules.SOCK, ChaFileDefine.ClothesKind.socks }            
+        };
     }
 }

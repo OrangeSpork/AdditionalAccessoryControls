@@ -10,11 +10,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryBoneEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryCoordinateData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryDynamicBonesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryHooks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryMaterialEditorHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessorySlotData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlsController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlsPlugin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryUI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryVisibilityRules.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalCoordinateUI.cs" />
   </ItemGroup>
 </Project>
