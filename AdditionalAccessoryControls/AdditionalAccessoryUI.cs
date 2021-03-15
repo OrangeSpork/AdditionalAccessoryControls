@@ -305,7 +305,7 @@ namespace AdditionalAccessoryControls
                 GUILayout.BeginVertical(UnityEngine.GUI.skin.box);
                 {
                     GUILayout.BeginHorizontal(expandLayoutOption);
-                    STUDIO_LOAD = GUILayout.Toggle(STUDIO_LOAD, "Apply Rules on Studio Scene Load or Studio Scene Character/Outfit Change (Normally Skipped)");
+                    STUDIO_LOAD = GUILayout.Toggle(STUDIO_LOAD, "Apply Rules on Studio Scene Character/Outfit Change (Normally Skipped) - Initial Scene State is Preserved");
                     GUILayout.EndHorizontal();
                 }
                 GUILayout.EndVertical();

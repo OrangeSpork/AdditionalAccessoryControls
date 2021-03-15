@@ -5,6 +5,7 @@ using KKABMX.Core;
 using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
+using KKAPI.Studio;
 using MessagePack;
 using Studio;
 using System;
@@ -14,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using UniRx;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static AdditionalAccessoryControls.AdditionalAccessoryCoordinateData;
 using static AdditionalAccessoryControls.AdditionalAccessorySlotData;
 
@@ -87,6 +89,7 @@ namespace AdditionalAccessoryControls
         {
             AccessoriesApi.AccessoryKindChanged -= UpdateCharacterAccessories;
             AccessoriesApi.AccessoryTransferred -= UpdateCharacterAccessories;
+
 #if DEBUG
             Log.LogInfo("Accessory Handlers De-Registered");
 #endif
@@ -1162,7 +1165,7 @@ namespace AdditionalAccessoryControls
 
         public void HandleVisibilityRulesForSlot(AdditionalAccessorySlotData slot, bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false, bool ruleUpdate = false)
         {
-            if (slot.VisibilityRules == null || hidingAccessoriesForPicture || (startup && KKAPI.Studio.StudioAPI.InsideStudio && !HasStudioApplyVisibilityRule(slot)))
+            if (slot.VisibilityRules == null || hidingAccessoriesForPicture || (startup && AdditionalAccessoryControlsPlugin.Instance.StudioSceneLoading) || (startup && KKAPI.Studio.StudioAPI.InsideStudio && !HasStudioApplyVisibilityRule(slot)))
             {
                 return;
             }    

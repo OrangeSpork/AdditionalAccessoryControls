@@ -8,10 +8,12 @@ using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
 using KKAPI.Maker.UI.Sidebar;
+using KKAPI.Studio;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using UniRx;
+using UnityEngine.SceneManagement;
 
 namespace AdditionalAccessoryControls
 {
@@ -38,7 +40,9 @@ namespace AdditionalAccessoryControls
         public AccessoryControlWrapper<MakerToggle, bool> AutoMatchHairColorWrapper { get; set; }
         public SidebarToggle CoordinateRulesToggle { get; set; }
 
-        public bool MakerControlsRegistered { get; set;}
+        public bool MakerControlsRegistered { get; set; }
+
+        public bool StudioSceneLoading { get; set; }
 
 
         // More Accessories
@@ -79,8 +83,37 @@ namespace AdditionalAccessoryControls
 
             // Hooks
             AdditionalAccessoryHooks.PatchMe();
-            
-        }        
+
+            if (StudioAPI.InsideStudio)
+            {
+                SceneManager.sceneUnloaded += OnSceneUnloaded;
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                StudioSceneLoading = true;
+            }
+
+        }
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+#if DEBUG
+            Log.LogInfo($"Scene {scene.name} Loaded, Mode: {mode}");
+#endif
+            if (scene.name.Equals("StudioSceneLoad"))
+            {
+                StudioSceneLoading = true;
+            }
+        }
+
+        private void OnSceneUnloaded(Scene scene)
+        {
+#if DEBUG
+            Log.LogInfo($"Scene {scene.name} Unloaded");
+#endif
+            if (scene.name.Equals("StudioSceneLoad"))
+            {
+                StudioSceneLoading = false;
+            }
+        }
+
 
         // Do Work on Entering/Leaving Maker
         public void SetupMakerControls(object sender, RegisterCustomControlsEvent eventData)
