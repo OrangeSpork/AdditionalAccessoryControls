@@ -45,7 +45,6 @@ namespace AdditionalAccessoryControls
         private bool loading = false;
 
 
-
         // Register Handlers
         protected override void OnEnable()
         {
@@ -324,6 +323,9 @@ namespace AdditionalAccessoryControls
                     if (slot.CharacterAccessory)
                     {
                         int newSlotNumber = FindNextEmptySlot(newSlotData);
+#if DEBUG
+                        Log.LogInfo($"Assigning old slot {slot.SlotNumber} to new slot {newSlotNumber}");
+#endif
                         if (newSlotNumber == -1)
                         {
                             newSlotNumber = AddMoreAccessoriesPart(slot.PartsInfo, -1) + 20;
@@ -647,7 +649,7 @@ namespace AdditionalAccessoryControls
         // Alternative Entrance?
         protected override void OnReload(GameMode currentGameMode)
         {
-            OnReload(currentGameMode, false);
+           // OnReload(currentGameMode, false);
         }
 
         // Logic Handlers
@@ -1160,7 +1162,7 @@ namespace AdditionalAccessoryControls
 
         public void HandleVisibilityRulesForSlot(AdditionalAccessorySlotData slot, bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false, bool ruleUpdate = false)
         {
-            if (slot.VisibilityRules == null || hidingAccessoriesForPicture || (startup && KKAPI.Studio.StudioAPI.InsideStudio))
+            if (slot.VisibilityRules == null || hidingAccessoriesForPicture || (startup && KKAPI.Studio.StudioAPI.InsideStudio && !HasStudioApplyVisibilityRule(slot)))
             {
                 return;
             }    
@@ -1171,7 +1173,7 @@ namespace AdditionalAccessoryControls
                 Log.LogInfo($"Rules Update for Slot: {slot}");
 #endif
             }
-
+           
             if (startup && HasStartupVisibilityRule(slot) && !accessory)
             {
 #if DEBUG
@@ -1498,6 +1500,16 @@ namespace AdditionalAccessoryControls
             {
                 return GetMoreAccessorySlotStatus(slotNumber - 20);
             }
+        }
+
+        public bool HasStudioApplyVisibilityRule(AdditionalAccessorySlotData slot)
+        {
+            foreach (AdditionalAccessoryVisibilityRuleData rule in slot.VisibilityRules)
+            {
+                if (rule.Rule.Equals(AdditionalAccessoryVisibilityRules.STUDIO_LOAD))
+                    return true;
+            }
+            return false;
         }
 
         public bool HasStartupVisibilityRule(AdditionalAccessorySlotData slot)

@@ -19,6 +19,7 @@ namespace AdditionalAccessoryControls
             public List<object> materialColorPropertyList { get; set; }
             public List<object> materialTexturePropertyList { get; set; }
             public List<object> materialShaderPropertyList { get; set; }
+            public List<object> materialCopyList { get; set; }
 
             public override string ToString()
             {
@@ -33,6 +34,8 @@ namespace AdditionalAccessoryControls
                 response += EnumerateMatEditList(materialTexturePropertyList);
                 response += "\nShader Props";
                 response += EnumerateMatEditList(materialShaderPropertyList);
+                response += "\nCopy List";
+                response += EnumerateMatEditList(materialCopyList);
                 return response;
             }
 
@@ -155,20 +158,29 @@ namespace AdditionalAccessoryControls
 
         private void MoveSlots(List<Tuple<int, int>> slotsToMove, MaterialEditorSaveData saveData, MaterialEditorSaveData snapshotData)
         {
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Moving Slots: {string.Join(",", slotsToMove)}");
+#endif
+
             DoMoveSlots(slotsToMove, saveData.rendererPropertyList, snapshotData.rendererPropertyList);
             DoMoveSlots(slotsToMove, saveData.materialFloatPropertyList, snapshotData.materialFloatPropertyList);
             DoMoveSlots(slotsToMove, saveData.materialColorPropertyList, snapshotData.materialColorPropertyList);
             DoMoveSlots(slotsToMove, saveData.materialTexturePropertyList, snapshotData.materialTexturePropertyList);
             DoMoveSlots(slotsToMove, saveData.materialShaderPropertyList, snapshotData.materialShaderPropertyList);
+            DoMoveSlots(slotsToMove, saveData.materialCopyList, snapshotData.materialCopyList);
         }
 
         private void ClearRemovedSlots(List<int> slotsToRemove, MaterialEditorSaveData saveData)
         {
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Removing Slots: {string.Join(",", slotsToRemove)}");
+#endif
             ClearRemovedNodes(slotsToRemove, saveData.rendererPropertyList);
             ClearRemovedNodes(slotsToRemove, saveData.materialFloatPropertyList);
             ClearRemovedNodes(slotsToRemove, saveData.materialColorPropertyList);
             ClearRemovedNodes(slotsToRemove, saveData.materialTexturePropertyList);
             ClearRemovedNodes(slotsToRemove, saveData.materialShaderPropertyList);
+            ClearRemovedNodes(slotsToRemove, saveData.materialCopyList);
         }
 
         private CharaCustomFunctionController FindMaterialCharaController()
@@ -181,6 +193,8 @@ namespace AdditionalAccessoryControls
             if (slotsToMove == null || snapshot == null)
                 return;
 
+            slotsToMove.Sort((i1, i2) => i2.Item2.CompareTo(i1.Item2));
+
             foreach (Tuple<int, int> slot in slotsToMove)
             {
                 DoMoveSlot(slot.Item1, slot.Item2, current, snapshot);
@@ -188,7 +202,7 @@ namespace AdditionalAccessoryControls
         }
 
         private void DoMoveSlot(int slotFrom, int slotTo, IList current, IList snapshot)
-        {
+        {            
             foreach (object sourceNode in snapshot)
             {
                 if (sourceNode == null)
@@ -277,6 +291,12 @@ namespace AdditionalAccessoryControls
             saveData.materialShaderPropertyList = new List<object>();
             CopyList((IList)AccessTools.Field(materialController.GetType(), "MaterialShaderList").GetValue(materialController), saveData.materialShaderPropertyList);
 
+            if (AccessTools.GetFieldNames(materialController.GetType()).Contains("MaterialCopyList"))
+            {
+                saveData.materialCopyList = new List<object>();
+                CopyList((IList)AccessTools.Field(materialController.GetType(), "MaterialCopyList").GetValue(materialController), saveData.materialCopyList);
+            }
+
             return saveData;
         }
 
@@ -303,6 +323,13 @@ namespace AdditionalAccessoryControls
             IList materialShaderList = (IList)AccessTools.Field(materialController.GetType(), "MaterialShaderList").GetValue(materialController);
             materialShaderList.Clear();
             CopyList(saveData.materialShaderPropertyList, materialShaderList);
+
+            if (AccessTools.GetFieldNames(materialController.GetType()).Contains("MaterialCopyList"))
+            {
+                IList materialCopyList = (IList)AccessTools.Field(materialController.GetType(), "MaterialCopyList").GetValue(materialController);
+                materialCopyList.Clear();
+                CopyList(saveData.materialCopyList, materialCopyList);
+            }
 
         }
 

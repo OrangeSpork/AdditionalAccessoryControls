@@ -12,6 +12,7 @@ namespace AdditionalAccessoryControls
         STARTUP = 1,
         H_START=2,
         H_END=3, 
+        STUDIO_LOAD=4,
         
         // Slot Rules
         TOP = 10,

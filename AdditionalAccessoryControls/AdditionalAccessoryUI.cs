@@ -11,7 +11,7 @@ namespace AdditionalAccessoryControls
 
         private static ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
-        private static Rect windowRect = new Rect(120, 220, 705, 640);
+        private static Rect windowRect = new Rect(120, 220, 705, 700);
         private static readonly GUILayoutOption expandLayoutOption = GUILayout.ExpandWidth(true);        
 
         private static GUIStyle labelStyle;
@@ -305,16 +305,25 @@ namespace AdditionalAccessoryControls
                 GUILayout.BeginVertical(UnityEngine.GUI.skin.box);
                 {
                     GUILayout.BeginHorizontal(expandLayoutOption);
+                    STUDIO_LOAD = GUILayout.Toggle(STUDIO_LOAD, "Apply Rules on Studio Scene Load or Studio Scene Character/Outfit Change (Normally Skipped)");
+                    GUILayout.EndHorizontal();
+                }
+                GUILayout.EndVertical();
+
+                    GUILayout.BeginVertical(UnityEngine.GUI.skin.box);
+                {
+                    GUILayout.BeginHorizontal(expandLayoutOption);
                     GUILayout.Label("Hide or Show On Lifecycle Events", GUILayout.ExpandWidth(false));
                     GUILayout.EndHorizontal();
 
                     GUILayout.BeginHorizontal(expandLayoutOption);
-                    GUILayout.Label("Startup is Onload - First entry into any scene. Studio is excluded.", GUILayout.ExpandWidth(false));
+                    GUILayout.Label("Startup is Onload - First entry into any scene. Studio is excluded (unless above option is selected).", GUILayout.ExpandWidth(false));
                     GUILayout.EndHorizontal();
 
                     GUILayout.BeginHorizontal();
-                    HIDE_ON_STARTUP = GUILayout.Toggle(HIDE_ON_STARTUP, "Hide on Startup (Defaults to Hidden)");
+                    HIDE_ON_STARTUP = GUILayout.Toggle(HIDE_ON_STARTUP, "Hide on Startup (Defaults to Hidden)");                    
                     GUILayout.EndHorizontal();
+
 
                     GUILayout.BeginHorizontal(expandLayoutOption);
                     GUILayout.Label("H Scene Start is after initial conversation, before first sex animation (use Startup for initial conversation).", GUILayout.ExpandWidth(false));
@@ -716,6 +725,20 @@ namespace AdditionalAccessoryControls
                 if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.STARTUP, AdditionalAccessoryVisibilityRulesModifiers.HIDE))
                 { 
                     CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.STARTUP, AdditionalAccessoryVisibilityRulesModifiers.HIDE, value);
+                    SendRulesUpdateNotification();
+                }
+
+            }
+        }
+
+        public bool STUDIO_LOAD
+        {
+            get => CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.STUDIO_LOAD, AdditionalAccessoryVisibilityRulesModifiers.NONE);
+            set
+            {
+                if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.STUDIO_LOAD, AdditionalAccessoryVisibilityRulesModifiers.NONE))
+                {
+                    CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.STUDIO_LOAD, AdditionalAccessoryVisibilityRulesModifiers.NONE, value);
                     SendRulesUpdateNotification();
                 }
 

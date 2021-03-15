@@ -137,6 +137,8 @@ namespace AdditionalAccessoryControls
             if (slotsToMove == null || snapshot == null)
                 return;
 
+            slotsToMove.Sort((i1, i2) => i2.Item2.CompareTo(i1.Item2));
+
             foreach (Tuple<int, int> slot in slotsToMove)
             {
                 DoMoveSlot(slot.Item1, slot.Item2, current, snapshot);
