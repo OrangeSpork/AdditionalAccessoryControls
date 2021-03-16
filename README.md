@@ -25,6 +25,7 @@ Opens up a sub-dialog with a variety of visibility rules that can be applied to 
 **Accessory Slot Inverse-Link**: Same as link but backwards. When the parent slot is visibile this is made invisible and vice versa. Use to create alternate accessory looks, switch between two different hair wigs with one click for example.
 
 **LifeCycle Rules**:\
+   *Apply Rules on Studio Scene Character/Outfit Change*: Normally visibility rules don't fire when loading/reloading a character or outfit into studio. This overrides that. Initial scene load is always exempt.\
    *Hide on Startup*: This accessorial loads initially as invisible instead of the normal visible. Does not apply in Studio. Use for weapons, shields, hats and other things you sometimes want for pictures but are more normally in the way.\
    *Hide/Show on H Scene Start*: This accessory is made visible/invisible when an HScene starts. This happens AFTER the initial HScene dialog and immediately prior to the first animation playing. Example: Hide a face veil for sex, and then use the next option to turn it back on afterwards.\
    *Hide/Show on H Scene End*: As above, but after the HSceen, happening immediately prior to the exit dialogue.\
