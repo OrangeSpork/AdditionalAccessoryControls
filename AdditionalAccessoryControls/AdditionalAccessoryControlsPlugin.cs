@@ -26,7 +26,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.0.4";
+        public const string Version = "1.0.5";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 
@@ -87,8 +87,7 @@ namespace AdditionalAccessoryControls
             if (StudioAPI.InsideStudio)
             {
                 SceneManager.sceneUnloaded += OnSceneUnloaded;
-                SceneManager.sceneLoaded += OnSceneLoaded;
-                StudioSceneLoading = true;
+                SceneManager.sceneLoaded += OnSceneLoaded;                
             }
 
         }
