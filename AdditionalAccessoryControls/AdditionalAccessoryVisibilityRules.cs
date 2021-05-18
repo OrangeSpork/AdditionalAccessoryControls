@@ -33,7 +33,8 @@ namespace AdditionalAccessoryControls
         NOSE = 31,
         EAR = 32,
         HAND = 33,
-        FOOT = 34        
+        FOOT = 34,
+        EYELASH = 35
     }
 
     public enum AdditionalAccessoryVisibilityRulesModifiers

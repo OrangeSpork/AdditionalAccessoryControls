@@ -371,6 +371,8 @@ namespace AdditionalAccessoryControls
                     HIDE_RIGHT_HAND = GUILayout.Toggle(HIDE_RIGHT_HAND, "R Hand");
                     HIDE_LEFT_FOOT = GUILayout.Toggle(HIDE_LEFT_FOOT, "L Foot");
                     HIDE_RIGHT_FOOT = GUILayout.Toggle(HIDE_RIGHT_FOOT, "R Foot");
+                    HIDE_LEFT_EYELASH = GUILayout.Toggle(HIDE_LEFT_EYELASH, "L Eyelash");
+                    HIDE_RIGHT_EYELASH = GUILayout.Toggle(HIDE_RIGHT_EYELASH, "R Eyelash");
 
                     GUILayout.EndHorizontal();
 
@@ -941,6 +943,32 @@ namespace AdditionalAccessoryControls
                 if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.FOOT, AdditionalAccessoryVisibilityRulesModifiers.RIGHT))
                 {
                     CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.FOOT, AdditionalAccessoryVisibilityRulesModifiers.RIGHT, value);
+                    SendRulesUpdateNotification();
+                }
+            }
+        }
+
+        public bool HIDE_LEFT_EYELASH
+        {
+            get => CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.LEFT);
+            set
+            {
+                if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.LEFT))
+                {
+                    CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.LEFT, value);
+                    SendRulesUpdateNotification();
+                }
+            }
+        }
+
+        public bool HIDE_RIGHT_EYELASH
+        {
+            get => CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.RIGHT);
+            set
+            {
+                if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.RIGHT))
+                {
+                    CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.RIGHT, value);
                     SendRulesUpdateNotification();
                 }
             }

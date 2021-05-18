@@ -116,6 +116,12 @@ namespace AdditionalAccessoryControls
             {
                 UnityEngine.GUI.changed = true;
 
+                // Header
+                GUILayout.BeginHorizontal(expandLayoutOption);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Close Me", GUILayout.ExpandWidth(false))) enabled = false;
+                GUILayout.EndHorizontal();
+
                 // Render Options
 
                 // Slot Suppression Options

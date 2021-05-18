@@ -1381,6 +1381,22 @@ namespace AdditionalAccessoryControls
             if (CheckBodyVisibilityRule(AdditionalAccessoryVisibilityRules.FOOT, AdditionalAccessoryVisibilityRulesModifiers.RIGHT))
                 bonesToHide.Add(AdditionalAccessoryBoneEffect.RIGHT_FOOT);
 
+            if (CheckBodyVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.LEFT))
+            {
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.LEFT_INNER_EYELASH);
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.LEFT_LOWER_EYELASH);
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.LEFT_OUTER_EYELASH);
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.LEFT_UPPER_EYELASH);
+            }
+
+            if (CheckBodyVisibilityRule(AdditionalAccessoryVisibilityRules.EYELASH, AdditionalAccessoryVisibilityRulesModifiers.RIGHT))
+            {
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.RIGHT_INNER_EYELASH);
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.RIGHT_LOWER_EYELASH);
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.RIGHT_OUTER_EYELASH);
+                bonesToHide.Add(AdditionalAccessoryBoneEffect.RIGHT_UPPER_EYELASH);
+            }
+
             return bonesToHide;
         }
 
