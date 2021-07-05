@@ -56,5 +56,5 @@ Allows you to parent the accessory to...just about anything on the character. In
 
 Click the button to open the advanced parent GUI. Find the bone you want to attach to, select it and hit the attach button at the bottom. Then tweak positioning and rotation as normal. Remove the link by clicking clear up at the top.
 
-Note 1: If you remove the think the accessory is parented to, it will revert to it's nominal parent location and wait for the parent to reappear. There is a performance penalty for this so clear parents you no longer intend to use.
+Note 1: If you remove the think the accessory is parented to, it will revert to it's nominal parent location and wait for the parent to reappear. There is a performance penalty for this so clear parents you no longer intend to use.\
 Note 2: When linking accessories together, use the same base parent location or there will be small differences in positioning depending on animation.
