@@ -11,6 +11,7 @@ using KKAPI.Maker.UI.Sidebar;
 using KKAPI.Studio;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UniRx;
 using UnityEngine.SceneManagement;
@@ -77,6 +78,7 @@ namespace AdditionalAccessoryControls
             // UI
             gameObject.AddComponent<AdditionalAccessoryUI>();
             gameObject.AddComponent<AdditionalCoordinateUI>();
+            gameObject.AddComponent<AdditionalAccessoryAdvancedParentUI>();
             CharacterApi.RegisterExtraBehaviour<AdditionalAccessoryControlsController>(GUID);
             MakerAPI.MakerStartedLoading += SetupMakerControls;
             MakerAPI.MakerExiting += CleanupMakerControls;
@@ -91,6 +93,12 @@ namespace AdditionalAccessoryControls
             }
 
         }
+
+        public void RefreshAdvancedParentLabel()
+        {
+            ReloadCustomInterface(null, null);
+        }
+
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
 #if DEBUG
@@ -114,6 +122,7 @@ namespace AdditionalAccessoryControls
         }
 
 
+        private MakerText advancedParentLabel;
         // Do Work on Entering/Leaving Maker
         public void SetupMakerControls(object sender, RegisterCustomControlsEvent eventData)
         {            
@@ -121,10 +130,16 @@ namespace AdditionalAccessoryControls
             AutoMatchHairColorWrapper = MakerAPI.AddEditableAccessoryWindowControl<MakerToggle, bool>(new MakerToggle(new MakerCategory("Accessory", ""), "Match Hair Color on Coord Load", this));
 
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Visibility Rules", null, this)).OnClick.AddListener(VisibilityRulesListener);
-            AccessoriesApi.SelectedMakerAccSlotChanged += UpdateVisibilityRulesUI;
+            AccessoriesApi.SelectedMakerAccSlotChanged += UpdateUI;
+            AccessoriesApi.SelectedMakerAccSlotChanged += RefreshAdvancedParents;
+            MakerAPI.ReloadCustomInterface += ReloadCustomInterface;
 
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Show", null, this)).OnClick.AddListener(ShowAccessory);
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Hide", null, this)).OnClick.AddListener(HideAccessory);
+
+            advancedParentLabel = new MakerText("Adv Parent: None", null, this);
+            MakerAPI.AddAccessoryWindowControl(advancedParentLabel);
+            MakerAPI.AddAccessoryWindowControl(new MakerButton("Advanced Parent", null, this)).OnClick.AddListener(AdvancedParent);
 
             CoordinateRulesToggle = MakerAPI.AddSidebarControl(new SidebarToggle("Coordinate Visibility Rules", false, this));
             CoordinateRulesToggle.ValueChanged.Subscribe(b =>
@@ -138,9 +153,30 @@ namespace AdditionalAccessoryControls
         private void CleanupMakerControls(object sender, EventArgs args)
         {
             MakerControlsRegistered = false;
-            AccessoriesApi.SelectedMakerAccSlotChanged -= UpdateVisibilityRulesUI;
-
+            AccessoriesApi.SelectedMakerAccSlotChanged -= UpdateUI;
+            AccessoriesApi.SelectedMakerAccSlotChanged -= RefreshAdvancedParents;
             AdditionalAccessoryUI.Hide();
+        }
+
+        private void RefreshAdvancedParents(object sender, EventArgs args)
+        {
+            StartCoroutine(MakerAPI.GetCharacterControl().gameObject.GetComponent<AdditionalAccessoryControlsController>().StartRefreshAdvancedParents());
+        }
+
+        private void AdvancedParent()
+        {
+            if (!MakerAPI.InsideAndLoaded)
+                return;
+
+            if (AdditionalAccessoryAdvancedParentUI.Instance.enabled)
+                AdditionalAccessoryAdvancedParentUI.Hide();
+            else
+            {
+
+                int currentSlot = AccessoriesApi.SelectedMakerAccSlot;
+                AdditionalAccessoryControlsController aacController = MakerAPI.GetCharacterControl().gameObject.GetComponent<AdditionalAccessoryControlsController>();
+                AdditionalAccessoryAdvancedParentUI.Show(aacController.SlotData[currentSlot], MakerAPI.GetCharacterControl());
+            }
         }
 
         private void ShowCoordinateRulesGUI(bool toggleState)
@@ -176,8 +212,22 @@ namespace AdditionalAccessoryControls
 
         }
 
+        private void ReloadCustomInterface(object sender, EventArgs eventArgs)
+        {
+            AdditionalAccessoryControlsController aacController = MakerAPI.GetCharacterControl().gameObject.GetComponent<AdditionalAccessoryControlsController>();
+            int currentSlot = AccessoriesApi.SelectedMakerAccSlot;
+            if (currentSlot != -1 && aacController != null)
+            {
+                advancedParentLabel.Text = $"Adv Parent: {aacController.SlotData[currentSlot].AdvancedParentShort}";
+            }
+            else
+            {
+                advancedParentLabel.Text = "Adv Parent: None";
+            }
+        }
+
         // Handle Maker Acc Slot Change
-        private void UpdateVisibilityRulesUI(object sender, AccessorySlotEventArgs args)
+        private void UpdateUI(object sender, AccessorySlotEventArgs args)
         {
             if (args.SlotIndex >= 0)
             {
@@ -200,13 +250,17 @@ namespace AdditionalAccessoryControls
                     Log.LogInfo($"New Slot Set: {aacController.SlotData[args.SlotIndex]}");
 #endif
                     AdditionalAccessoryUI.Change(aacController.SlotData[args.SlotIndex], aacController.ChaControl);
+                    advancedParentLabel.Text = $"Adv Parent: {aacController.SlotData[args.SlotIndex].AdvancedParentShort}";
+                    AdditionalAccessoryAdvancedParentUI.Change(aacController.SlotData[args.SlotIndex], aacController.ChaControl);
                 }
                 else
                 {
 #if DEBUG
                     Log.LogInfo("No Slot Data or Slot Empty.");
 #endif
+                    advancedParentLabel.Text = "Adv Parent: None";
                     AdditionalAccessoryUI.Hide();
+                    AdditionalAccessoryAdvancedParentUI.Hide();
                 }
             }
         }
@@ -256,6 +310,11 @@ namespace AdditionalAccessoryControls
 #endif
                 AdditionalAccessoryUI.Hide();
             }
+        }
+
+        private void LateUpdate()
+        {
+            AdditionalAccessoryControlDynamicBoneUpdateManager.ReapInactiveDynamicBones();
         }
 
         // Soft Link Reference to More Accessories

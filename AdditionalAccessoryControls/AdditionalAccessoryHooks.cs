@@ -24,6 +24,18 @@ namespace AdditionalAccessoryControls
             harmony.PatchAll(typeof(AdditionalAccessoryHooks));
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(DynamicBone), "UpdateDynamicBones")]
+        static void DynamicBoneUpdate(DynamicBone __instance)
+        {
+            AdditionalAccessoryControlDynamicBoneUpdateManager.InvokeUpdateListeners(__instance);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(DynamicBone_Ver02), "UpdateDynamicBones")]
+        static void DynamicBoneV2Update(DynamicBone_Ver02 __instance)
+        {
+            AdditionalAccessoryControlDynamicBoneUpdateManager.InvokeUpdateListeners(__instance);
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
         static void ClothesStateChange(ChaControl __instance, int clothesKind, byte state, bool next)
         {

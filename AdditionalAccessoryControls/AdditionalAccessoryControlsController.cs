@@ -195,6 +195,7 @@ namespace AdditionalAccessoryControls
                 ChaControl.SetAccessoryState(transferArgs.DestinationSlotIndex, true);
                 HandleVisibilityRules(accessory: true);
             }
+            StartRefreshAdvancedParents();
         }
 
         protected override void OnCardBeingSaved(GameMode currentGameMode)
@@ -427,6 +428,9 @@ namespace AdditionalAccessoryControls
 #endif
                 ChaControl.SetAccessoryStateAll(true);
 
+                // Handle Advanced Parents
+                StartCoroutine(StartRefreshAdvancedParents());
+
                 // Wait a few frames for other players to finish up
                 StartCoroutine(StartHandleVisibilityRules());
             }
@@ -640,6 +644,10 @@ namespace AdditionalAccessoryControls
 #endif
                     ChaControl.SetAccessoryStateAll(true);
                 }
+
+                // Handle Advanced Parents
+                StartCoroutine(StartRefreshAdvancedParents());
+
                 HandleVisibilityRules(startup: true);
             }
             catch (Exception e)
@@ -702,7 +710,7 @@ namespace AdditionalAccessoryControls
                 i++;
             }
             return slotData;
-        }
+        }      
 
         private bool hidingAccessoriesForPicture = false;
         // Following methods used when saving a coordinate card so character accessories don't end up in the coordinate card picture
@@ -959,6 +967,27 @@ namespace AdditionalAccessoryControls
                 }
             }
 
+        }
+
+        private GameObject GetMoreAccessorialAccObject(int slot)
+        {
+            IDictionary charAdditionalData = (IDictionary)additionalDataField.GetValue(AdditionalAccessoryControlsPlugin.MoreAccessoriesInstance);
+            foreach (DictionaryEntry entry in charAdditionalData)
+            {
+                if (entry.Key.Equals(ChaControl.chaFile))
+                {
+                    IList objectList = (IList)objectsField.GetValue(entry.Value);
+                    if (slot >= objectList.Count)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return (GameObject)objField.GetValue(objectList[slot]);
+                    }
+                }
+            }
+            return null;
         }
 
         private CmpAccessory GetMoreAccessorialCmpAccessory(int slot)
@@ -1756,6 +1785,62 @@ namespace AdditionalAccessoryControls
                         slot.ClearVisibilityRule(AdditionalAccessoryVisibilityRules.ACCESSORY_LINK);
                     }
                 }
+            }
+        }
+
+        // Advanced Parent Stuff
+        public void SetAdvancedParent(string advancedParent, int slot)
+        {
+#if DEBUG
+            Log.LogInfo($"Setting {slot} to {advancedParent}");
+#endif
+            SlotData[slot].AdvancedParent = advancedParent;
+            RefreshAdvancedParent(slot);
+
+        }
+
+        public IEnumerator StartRefreshAdvancedParents()
+        {
+            yield return null;
+            yield return null;
+            yield return null;
+            RefreshAdvancedParents();
+        }
+
+        public void RefreshAdvancedParents()
+        { 
+            foreach (AdditionalAccessorySlotData slot in slotData)
+            {
+                if (slot != null)
+                    RefreshAdvancedParent(slot.SlotNumber);
+            }
+        }
+
+        public void RefreshAdvancedParent(int slot)
+        {
+            if (SlotData[slot].AdvancedParent == null)
+            {
+                AdditionalAccessoryAdvancedParentController parentController = slot < 20 ? ChaControl.objAccessory[slot]?.GetComponent<AdditionalAccessoryAdvancedParentController>() : GetMoreAccessorialAccObject(slot - 20)?.GetComponent<AdditionalAccessoryAdvancedParentController>();
+                if (parentController)
+                {
+#if DEBUG
+                    Log.LogInfo($"Refreshing Advanced Parent on {slot}, clearing controller");
+#endif
+                    GameObject.Destroy(parentController);
+                }
+            }
+            else
+            {
+#if DEBUG
+                Log.LogInfo($"Refreshing Advanced Parent on {slot} to {SlotData[slot].AdvancedParent}");
+#endif
+                AdditionalAccessoryAdvancedParentController parentController = slot < 20 ? ChaControl.objAccessory[slot]?.GetOrAddComponent<AdditionalAccessoryAdvancedParentController>() : GetMoreAccessorialAccObject(slot - 20)?.GetComponent<AdditionalAccessoryAdvancedParentController>();
+                if (parentController)
+                {
+                    parentController.ChaControl = ChaControl;
+                    parentController.LinkParent = SlotData[slot].AdvancedParent;
+                }
+
             }
         }
 

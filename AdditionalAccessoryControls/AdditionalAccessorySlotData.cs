@@ -24,6 +24,17 @@ namespace AdditionalAccessoryControls
         public bool AutoMatchBackHairColor { get; set; } // When a coordinate card is loaded, please set this to current char back hair color
         [Key(6)]
         public List<AdditionalAccessoryVisibilityRuleData> VisibilityRules { get; set; } // Visibility Rules
+        [Key(7)]
+        public string AdvancedParent { get; set; }
+
+        [IgnoreMember]
+        public string AdvancedParentShort { 
+            get
+            {
+                int lastSlash = AdvancedParent == null ? -1 : AdvancedParent.LastIndexOf("/") + 1;
+                return AdvancedParent == null ? "None" : AdvancedParent.Substring(lastSlash);
+            }
+        }
 
         [Serializable]
         [MessagePackObject]
@@ -70,7 +81,7 @@ namespace AdditionalAccessoryControls
 
         public override string ToString()
         {
-            return String.Format("Slot: {0} Acc: {4} Original Slot: {1} Is_Empty: {2} Char_Acc: {3} Auto Match Hair: {7} Id: {5} Type: {6} V.Rules: ({8})", SlotNumber, OriginalSlotNumber, IsEmpty, CharacterAccessory, AccessoryName, PartsInfo?.id, PartsInfo?.type, AutoMatchBackHairColor, (VisibilityRules == null ? "" : string.Join(",", VisibilityRules)));
+            return String.Format("Slot: {0} Acc: {4} Original Slot: {1} Is_Empty: {2} Char_Acc: {3} Auto Match Hair: {7} Id: {5} Type: {6} AdvParent: {9} V.Rules: ({8})", SlotNumber, OriginalSlotNumber, IsEmpty, CharacterAccessory, AccessoryName, PartsInfo?.id, PartsInfo?.type, AutoMatchBackHairColor, (VisibilityRules == null ? "" : string.Join(",", VisibilityRules)), AdvancedParent);
         }
 
         public void ClearVisibilityRule(AdditionalAccessoryVisibilityRules rule)
@@ -88,7 +99,7 @@ namespace AdditionalAccessoryControls
                 }
             }
 
-        }
+        }        
 
         public void SetVisibilityRule(AdditionalAccessoryVisibilityRules rule, AdditionalAccessoryVisibilityRulesModifiers mod, bool enabled)
         {
@@ -229,6 +240,7 @@ namespace AdditionalAccessoryControls
             copy.CharacterAccessory = source.CharacterAccessory;
             copy.AccessoryName = source.AccessoryName;
             copy.PartsInfo = source.PartsInfo;
+            copy.AdvancedParent = source.AdvancedParent;
             copy.AutoMatchBackHairColor = source.AutoMatchBackHairColor;
             copy.VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
             if (source.VisibilityRules != null)
@@ -248,6 +260,7 @@ namespace AdditionalAccessoryControls
             IsEmpty = true;
             CharacterAccessory = false;
             PartsInfo = null;
+            AdvancedParent = null;
             AutoMatchBackHairColor = false;
             VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
         }
@@ -261,6 +274,7 @@ namespace AdditionalAccessoryControls
             slot.IsEmpty = true;
             slot.CharacterAccessory = false;
             slot.PartsInfo = null;
+            slot.AdvancedParent = null;
             slot.AutoMatchBackHairColor = false;
             slot.VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
             return slot;
@@ -275,6 +289,7 @@ namespace AdditionalAccessoryControls
             slot.IsEmpty = false;
             slot.CharacterAccessory = false;
             slot.PartsInfo = partsInfo;
+            slot.AdvancedParent = null;
             slot.AutoMatchBackHairColor = false;
             slot.VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
             return slot;
@@ -289,6 +304,7 @@ namespace AdditionalAccessoryControls
             slot.IsEmpty = false;
             slot.CharacterAccessory = true;
             slot.PartsInfo = partsInfo;
+            slot.AdvancedParent = null;
             slot.AutoMatchBackHairColor = false;
             slot.VisibilityRules = new List<AdditionalAccessoryVisibilityRuleData>();
             return slot;
