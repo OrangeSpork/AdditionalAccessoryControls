@@ -8,6 +8,7 @@ using Manager;
 using Studio;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace AdditionalAccessoryControls
@@ -21,7 +22,23 @@ namespace AdditionalAccessoryControls
         public static void PatchMe()
         {
             Harmony harmony = new Harmony(AdditionalAccessoryControlsPlugin.GUID);
-            harmony.PatchAll(typeof(AdditionalAccessoryHooks));
+            harmony.PatchAll(typeof(AdditionalAccessoryHooks));           
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(CmpBase), "EnableDynamicBones")]
+        static void MoreAccessoriesLateUpdateForcePostfixPostfix(CmpBase __instance, ref bool enable)
+        {
+            if (!AdditionalAccessoryControlsPlugin.MoreAccessoriesDynamicBonesFix.Value)
+                return;
+
+            if (__instance.GetType() != typeof(CmpAccessory))
+                return;
+
+            int slot = int.Parse(__instance.gameObject.name.Substring(7));            
+            if (slot >= 20 && __instance.isVisible)
+            {
+                enable = !enable;
+            }
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(DynamicBone), "UpdateDynamicBones")]

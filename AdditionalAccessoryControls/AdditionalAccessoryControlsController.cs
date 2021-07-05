@@ -30,6 +30,7 @@ namespace AdditionalAccessoryControls
 
         // Slot Data Sets
         private AdditionalAccessorySlotData[] slotData;  // Mirrors character accessory data
+
         private AdditionalAccessorySlotData[] coordinateSlotData; // Additional data from coordinate set, merged to slot data during load process
 
         public AdditionalAccessoryCoordinateData CoordinateOverrideData { get; set; }
@@ -195,7 +196,7 @@ namespace AdditionalAccessoryControls
                 ChaControl.SetAccessoryState(transferArgs.DestinationSlotIndex, true);
                 HandleVisibilityRules(accessory: true);
             }
-            StartRefreshAdvancedParents();
+            StartCoroutine(StartRefreshAdvancedParents());
         }
 
         protected override void OnCardBeingSaved(GameMode currentGameMode)
@@ -392,6 +393,9 @@ namespace AdditionalAccessoryControls
                 {
                     ChaControl.ChangeAccessory(true);
                 }
+
+                // Fix Moved Advanced Parents
+                FixMovedAdvancedParents(charaSlots, movedSlots);
 
                 // Update related plugins that I just broke
                 MaterialEditorHelper.UpdateOnCoordinateLoadApply(coordinate, movedSlots);
@@ -1799,6 +1803,63 @@ namespace AdditionalAccessoryControls
 
         }
 
+        private void FixMovedAdvancedParents(List<AdditionalAccessorySlotData> charaSlots, List<Tuple<int, int>> movedSlots)
+        {
+            foreach (AdditionalAccessorySlotData slotData in charaSlots)
+            {
+                if (slotData.AdvancedParent != null)
+                {
+                    int slotStringIndex = slotData.AdvancedParent.LastIndexOf("ca_slot");                    
+                    if (slotStringIndex >= 0)
+                    {                        
+                        int nextSlashIndex = slotData.AdvancedParent.IndexOf("/", slotStringIndex);
+                        int length = nextSlashIndex - slotStringIndex - 7;
+                        int parentSlotNumber = -1;
+                        string replacementString = null;
+                        if (nextSlashIndex >= 0)
+                        {
+                            replacementString = slotData.AdvancedParent.Substring(slotStringIndex + 7, length).TrimStart('0');
+                        }
+                        else
+                        {
+                            replacementString = slotData.AdvancedParent.Substring(slotStringIndex + 7).TrimStart('0');
+                        }
+                        parentSlotNumber = int.Parse(replacementString);
+
+#if DEBUG
+                        Log.LogInfo($"Parsed out slot number {parentSlotNumber} from AdvParent {slotData.AdvancedParent}");
+#endif
+
+                        Tuple<int, int> movedSlot = FindByMovedFrom(parentSlotNumber, movedSlots);
+                        if (movedSlot != null)
+                        {
+                            slotData.AdvancedParent = slotData.AdvancedParent.Replace($"ca_slot{parentSlotNumber.ToString("00")}", $"ca_slot{movedSlot.Item2.ToString("00")}");
+#if DEBUG
+                            Log.LogInfo($"Replaced AdvancedParent with {slotData.AdvancedParent}");
+#endif
+                        }
+                        else
+                        {
+#if DEBUG
+                            Log.LogInfo($"Clearing dead link to slot {parentSlotNumber}");
+#endif
+                            slotData.AdvancedParent = null;
+                        }
+                    }
+                    
+                }
+            }
+        }
+        private Tuple<int, int> FindByMovedFrom(int slot, List<Tuple<int, int>> movedSlots)
+        {
+            foreach (Tuple<int, int> movedSlot in movedSlots)
+            {
+                if (movedSlot.Item1 == slot)
+                    return movedSlot;
+            }
+            return null;
+        }
+
         public IEnumerator StartRefreshAdvancedParents()
         {
             yield return null;
@@ -1834,13 +1895,12 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                 Log.LogInfo($"Refreshing Advanced Parent on {slot} to {SlotData[slot].AdvancedParent}");
 #endif
-                AdditionalAccessoryAdvancedParentController parentController = slot < 20 ? ChaControl.objAccessory[slot]?.GetOrAddComponent<AdditionalAccessoryAdvancedParentController>() : GetMoreAccessorialAccObject(slot - 20)?.GetComponent<AdditionalAccessoryAdvancedParentController>();
+                AdditionalAccessoryAdvancedParentController parentController = slot < 20 ? ChaControl.objAccessory[slot]?.GetOrAddComponent<AdditionalAccessoryAdvancedParentController>() : GetMoreAccessorialAccObject(slot - 20)?.GetOrAddComponent<AdditionalAccessoryAdvancedParentController>();
                 if (parentController)
                 {
                     parentController.ChaControl = ChaControl;
                     parentController.LinkParent = SlotData[slot].AdvancedParent;
                 }
-
             }
         }
 

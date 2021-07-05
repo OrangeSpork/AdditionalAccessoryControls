@@ -13,9 +13,10 @@ namespace AdditionalAccessoryControls
     public class AdditionalAccessoryAdvancedParentController : MonoBehaviour
     {
         private string linkParent;
-        public string LinkParent {
+        public string LinkParent
+        {
             get { return linkParent; }
-            set 
+            set
             {
                 if (linkParent != value)
                 {
@@ -82,7 +83,7 @@ namespace AdditionalAccessoryControls
                 if (checkTransform == ChaControl.gameObject.transform)
                     return parentTransforms;
 
-                checkTransform = checkTransform.transform.parent;                                
+                checkTransform = checkTransform.transform.parent;
             }
 
             return parentTransforms;
@@ -104,7 +105,7 @@ namespace AdditionalAccessoryControls
         private void ScanForDynamicBoneInHierarchy()
         {
             if (parentTransform != null)
-            {                
+            {
                 List<Transform> parentTransforms = new List<Transform>();
 
                 Transform checkParentTransform = parentTransform;
@@ -131,7 +132,7 @@ namespace AdditionalAccessoryControls
             if (bones != null && bones.Length > 0)
             {
                 foreach (DynamicBone bone in bones)
-                {                    
+                {
                     if (DynamicBoneInyMyHierarchy(bone, parentTransforms))
                     {
                         DynamicBone = bone;
@@ -223,11 +224,11 @@ namespace AdditionalAccessoryControls
             if (particle.GetType() == particleType)
                 return parentTransforms.Contains((Transform)particleTransformField.GetValue(particle));
             else
-                return parentTransforms.Contains( ((DynamicBone_Ver02.Particle)particle).Transform );
+                return parentTransforms.Contains(((DynamicBone_Ver02.Particle)particle).Transform);
         }
 
         public void OnDynamicBoneUpdate(DynamicBone bone)
-        {            
+        {
             LateUpdate();
         }
 

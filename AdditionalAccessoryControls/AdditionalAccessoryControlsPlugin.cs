@@ -27,7 +27,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.0.6";
+        public const string Version = "1.1.0";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 
@@ -35,6 +35,7 @@ namespace AdditionalAccessoryControls
 
         // Config
         public static ConfigEntry<bool> TrimExcessAccessorySlotsOnSave { get; set; }
+        public static ConfigEntry<bool> MoreAccessoriesDynamicBonesFix { get; set; }
 
         // UX References
         public AccessoryControlWrapper<MakerToggle, bool> CharacterAccessoryControlWrapper { get; set; }
@@ -60,6 +61,7 @@ namespace AdditionalAccessoryControls
             Instance = this;
 
             TrimExcessAccessorySlotsOnSave = Config.Bind("Options", "Trim More Accessory Slots", false, "Extra Accessory Slots Past Actual Accessories Removed on Save");
+            MoreAccessoriesDynamicBonesFix = Config.Bind("Options", "Fix More Accessories Dynamic Bones", true, "Fix a Bug in More Accessories That Disables Dynamic Bones in More Accessory Slots");
 
 #if DEBUG
             Log.LogInfo("Additional Accessories Plugin Loaded");
