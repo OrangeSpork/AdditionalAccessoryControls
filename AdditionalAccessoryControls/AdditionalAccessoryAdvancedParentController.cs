@@ -37,7 +37,14 @@ namespace AdditionalAccessoryControls
 
         private void UpdateParent()
         {
-            parentTransform = ChaControl.gameObject.transform.Find(LinkParent)?.transform;
+            parentTransform = null;
+            gameObject.transform.position = Vector3.zero;
+            gameObject.transform.eulerAngles = Vector3.zero;
+            gameObject.transform.localPosition = Vector3.zero;
+            gameObject.transform.localEulerAngles = Vector3.zero;
+
+            if (LinkParent != null && LinkParent.Length > 0)
+                parentTransform = ChaControl.gameObject.transform.Find(LinkParent)?.transform;
 #if DEBUG
             if (parentTransform)
                 Log.LogInfo($"Linked to {parentTransform}  {LinkParent}");
@@ -46,7 +53,6 @@ namespace AdditionalAccessoryControls
 #endif
 
             // Re-Check for dynamic bones in the parent hierarchy
-
             if (DynamicBone != null && DynamicBone.GetType() == typeof(DynamicBone))
                 AdditionalAccessoryControlDynamicBoneUpdateManager.UnRegisterDynamicBone((DynamicBone)DynamicBone, OnDynamicBoneUpdate);
             else if (DynamicBone != null && DynamicBone.GetType() == typeof(DynamicBone_Ver02))
@@ -54,7 +60,8 @@ namespace AdditionalAccessoryControls
 
             DynamicBone = null;
             dynamicBonesInstantiated = true;
-            ScanForDynamicBone();
+            if (parentTransform != null)
+                ScanForDynamicBone();
         }
 
         private static FieldInfo mParticlesField = AccessTools.Field(typeof(DynamicBone), "m_Particles");
@@ -229,11 +236,23 @@ namespace AdditionalAccessoryControls
 
         public void OnDynamicBoneUpdate(DynamicBone bone)
         {
+#if DEBUG
+            if (parentTransform == null)
+            {
+                Log.LogInfo($"Receiving Update on Dead Controller: {bone.name}");
+            }
+#endif
             LateUpdate();
         }
 
         public void OnDynamicBoneV2Update(DynamicBone_Ver02 bone)
         {
+#if DEBUG
+            if (parentTransform == null)
+            {
+                Log.LogInfo($"Receiving Update on Dead Controller: {bone.name}");
+            }
+#endif
             LateUpdate();
         }
 
@@ -248,8 +267,11 @@ namespace AdditionalAccessoryControls
                 ScanForDynamicBone();
             }
 
-            if (parentTransform)
+            if (parentTransform != null)
             {
+                gameObject.transform.localPosition = Vector3.zero;
+                gameObject.transform.localEulerAngles = Vector3.zero;
+
                 gameObject.transform.position = parentTransform.position;
                 gameObject.transform.eulerAngles = parentTransform.eulerAngles;
             }

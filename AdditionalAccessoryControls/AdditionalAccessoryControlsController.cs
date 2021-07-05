@@ -1887,7 +1887,8 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                     Log.LogInfo($"Refreshing Advanced Parent on {slot}, clearing controller");
 #endif
-                    GameObject.Destroy(parentController);
+                    parentController.LinkParent = null;
+                    GameObject.DestroyImmediate(parentController);
                 }
             }
             else

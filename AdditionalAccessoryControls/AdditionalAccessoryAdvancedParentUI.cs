@@ -48,7 +48,15 @@ namespace AdditionalAccessoryControls
 
             Instance.enabled = true;
             Change(slot, chaControl);
-            Instance.searchTerm = slot.AdvancedParentShort;
+            if (slot.AdvancedParent != null && slot.AdvancedParent.Length > 0)
+            {
+                Transform parentTransform = chaControl.gameObject.transform.Find(slot.AdvancedParent);
+                if (parentTransform != null)
+                {
+                    Instance.OpenParentsOf(parentTransform.gameObject);
+                }
+            }
+            Instance.searchTerm = "";
 
         }
 
@@ -153,7 +161,15 @@ namespace AdditionalAccessoryControls
                 GUILayout.BeginHorizontal(expandLayoutOption);
                 GUILayout.Label($"Current Parent: {CurrentSlot.AdvancedParentShort}");
                 GUILayout.Space(30f);
-                if (GUILayout.Button("View Selected Parent", GUILayout.ExpandWidth(false))) searchTerm = SelectedParentShort;
+                if (GUILayout.Button("View Selected Parent", GUILayout.ExpandWidth(false)))
+                {
+                    Transform parentTransform = ChaControl.gameObject.transform.Find(CurrentSlot.AdvancedParent);
+                    if (parentTransform != null)
+                    {
+                        OpenParentsOf(parentTransform.gameObject);
+                    }
+                    searchTerm = "";
+                }
                 if (GUILayout.Button("Clear Parent", GUILayout.ExpandWidth(false)))
                 {
                     Controller.SetAdvancedParent(null, CurrentSlot.SlotNumber);
@@ -259,7 +275,9 @@ namespace AdditionalAccessoryControls
             {
                 Color c = GUI.color;
 
-                if (go.name == SelectedParentShort)
+                if (BuildParentString(go) == CurrentSlot.AdvancedParent)
+                    GUI.color = Color.red;
+                else if (go.name == SelectedParentShort)
                     GUI.color = Color.cyan;
 
                 GUILayout.BeginHorizontal();
@@ -321,9 +339,6 @@ namespace AdditionalAccessoryControls
                 fullParentString = $"{nowGO.name}/{fullParentString}";
                 nowGO = nowGO.transform.parent.gameObject;
             };
-#if DEBUG
-            Log.LogInfo($"Selected: {fullParentString}");
-#endif
             return fullParentString;
         }
 
