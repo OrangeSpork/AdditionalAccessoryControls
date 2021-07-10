@@ -56,5 +56,7 @@ Allows you to parent the accessory to...just about anything on the character. In
 
 Click the button to open the advanced parent GUI. Find the bone you want to attach to, select it and hit the attach button at the bottom. Then tweak positioning and rotation as normal. Remove the link by clicking clear up at the top.
 
+If the attachment point is a SkinnedMeshRenderer (such as the tongue, teeth, eyebrows or head) you will be prompted for a vertex point to attach the accessory to more specifically. To help you find the appropriate point, a 'Find Closest' button appears. Position the accessory at the point you want to attach it and click the find closest, the vertex index will fill in with the closest available vertex point number. Then click Attach as per normal to link the accessory. Some final position adjustment may be required.
+
 Note 1: If you remove the think the accessory is parented to, it will revert to it's nominal parent location and wait for the parent to reappear. There is a performance penalty for this so clear parents you no longer intend to use.\
 Note 2: When linking accessories together, use the same base parent location or there will be small differences in positioning depending on animation.
