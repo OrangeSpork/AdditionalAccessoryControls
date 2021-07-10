@@ -4,6 +4,7 @@ using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
@@ -32,6 +33,8 @@ namespace AdditionalAccessoryControls
 
         private bool dynamicBonesInstantiated = true;
         private Transform parentTransform;
+        private int[] vertices;
+        private AdditionalAccessoryAdvancedParentSkinnedMeshHelper meshHelper;
 
         private ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
@@ -43,8 +46,53 @@ namespace AdditionalAccessoryControls
             gameObject.transform.localPosition = Vector3.zero;
             gameObject.transform.localEulerAngles = Vector3.zero;
 
+
+            if (meshHelper != null)
+            {
+                meshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+                vertices = null;
+                meshHelper = null;
+            }
+
             if (LinkParent != null && LinkParent.Length > 0)
-                parentTransform = ChaControl.gameObject.transform.Find(LinkParent)?.transform;
+            {
+                if (LinkParent.IndexOf("|") > 0)
+                {
+                    try
+                    {
+#if DEBUG
+                        Log.LogInfo($"Linking to Mesh Vertice at Transform location {LinkParent} | index {LinkParent.IndexOf("|")} Search: {LinkParent.Substring(0, LinkParent.IndexOf("|"))}");
+#endif
+                        parentTransform = ChaControl.gameObject.transform.Find(LinkParent.Substring(0, LinkParent.IndexOf("|")))?.transform;
+                        if (parentTransform != null)
+                        {
+                            string verticesString = LinkParent.Substring(LinkParent.IndexOf("|") + 1, LinkParent.Length - LinkParent.IndexOf("|") - 1);
+                            string[] verticeStrings = verticesString.Split('|');
+                            vertices = new int[verticeStrings.Length];
+                            for (int i = 0; i < verticeStrings.Length; i++)
+                            {
+                                vertices[i] = int.Parse(verticeStrings[i]);
+                            }
+
+                            meshHelper = parentTransform.gameObject.GetOrAddComponent<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
+                            meshHelper.RegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+
+#if DEBUG
+                            Log.LogInfo($"Attaching to SM at {parentTransform} Vertices {vertices}");
+#endif
+                        }
+                    }
+                    catch
+                    {
+                        vertices = null;
+                        LinkParent = null;
+                        parentTransform = null;
+                        meshHelper = null;
+                    }
+                }
+                else
+                    parentTransform = ChaControl.gameObject.transform.Find(LinkParent)?.transform;
+            }
 #if DEBUG
             if (parentTransform)
                 Log.LogInfo($"Linked to {parentTransform}  {LinkParent}");
@@ -135,7 +183,7 @@ namespace AdditionalAccessoryControls
             if (go == null)
                 return false;
 
-            DynamicBone[] bones = go.GetComponentsInChildren<DynamicBone>(true);
+            DynamicBone[] bones = go.GetComponents<DynamicBone>();
             if (bones != null && bones.Length > 0)
             {
                 foreach (DynamicBone bone in bones)
@@ -157,7 +205,7 @@ namespace AdditionalAccessoryControls
                 }
             }
 
-            DynamicBone_Ver02[] bones2 = go.GetComponentsInChildren<DynamicBone_Ver02>(true);
+            DynamicBone_Ver02[] bones2 = go.GetComponents<DynamicBone_Ver02>();
             if (bones2 != null && bones2.Length > 0)
             {
                 foreach (DynamicBone_Ver02 bone in bones2)
@@ -256,8 +304,17 @@ namespace AdditionalAccessoryControls
             LateUpdate();
         }
 
-        private void LateUpdate()
+        public void OnSkinnedMeshUpdate(SkinnedMeshRenderedVertex vertex)
         {
+            gameObject.transform.localPosition = Vector3.zero;
+            gameObject.transform.localEulerAngles = Vector3.zero;
+
+            gameObject.transform.position = vertex.position;
+            gameObject.transform.eulerAngles = vertex.eulerAngles;
+        }
+
+        private void LateUpdate()
+        { 
             if (LinkParent != null && parentTransform == null)
             {
                 UpdateParent();
@@ -269,11 +326,14 @@ namespace AdditionalAccessoryControls
 
             if (parentTransform != null)
             {
-                gameObject.transform.localPosition = Vector3.zero;
-                gameObject.transform.localEulerAngles = Vector3.zero;
+                if (meshHelper == null)
+                { 
+                    gameObject.transform.localPosition = Vector3.zero;
+                    gameObject.transform.localEulerAngles = Vector3.zero;
 
-                gameObject.transform.position = parentTransform.position;
-                gameObject.transform.eulerAngles = parentTransform.eulerAngles;
+                    gameObject.transform.position = parentTransform.position;
+                    gameObject.transform.eulerAngles = parentTransform.eulerAngles;
+                }
             }
         }
 
@@ -283,6 +343,10 @@ namespace AdditionalAccessoryControls
                 AdditionalAccessoryControlDynamicBoneUpdateManager.UnRegisterDynamicBone((DynamicBone)DynamicBone, OnDynamicBoneUpdate);
             else if (DynamicBone != null && DynamicBone.GetType() == typeof(DynamicBone_Ver02))
                 AdditionalAccessoryControlDynamicBoneUpdateManager.UnRegisterDynamicBone((DynamicBone_Ver02)DynamicBone, OnDynamicBoneV2Update);
+
+            if (meshHelper != null)
+                meshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+
         }
     }
 }

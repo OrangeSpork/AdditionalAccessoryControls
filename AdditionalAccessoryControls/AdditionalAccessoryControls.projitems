@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryAdvancedParentController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryAdvancedParentSkinnedMeshHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryAdvancedParentUI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryBoneEffect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlDynamicBoneUpdateManager.cs" />

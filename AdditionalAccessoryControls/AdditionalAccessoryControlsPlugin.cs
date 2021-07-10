@@ -11,6 +11,7 @@ using KKAPI.Maker.UI.Sidebar;
 using KKAPI.Studio;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using UniRx;
@@ -27,7 +28,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.1.0";
+        public const string Version = "1.1.1";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 
@@ -77,7 +78,7 @@ namespace AdditionalAccessoryControls
                 throw new Exception("More Accessories Required and Not Found");
             }
 
-            // UI
+            // UI            
             gameObject.AddComponent<AdditionalAccessoryUI>();
             gameObject.AddComponent<AdditionalCoordinateUI>();
             gameObject.AddComponent<AdditionalAccessoryAdvancedParentUI>();

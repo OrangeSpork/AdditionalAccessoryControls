@@ -1,5 +1,6 @@
 ﻿using AIChara;
 using BepInEx.Logging;
+using KKAPI.Maker;
 using System.Linq;
 using UnityEngine;
 using static AdditionalAccessoryControls.AdditionalAccessorySlotData;
@@ -113,6 +114,9 @@ namespace AdditionalAccessoryControls
 
         private void OnGUI()
         {
+            if (!MakerAPI.InsideAndLoaded)
+                return;
+
             if (!guiLoaded)
             {
                 labelStyle = new GUIStyle(UnityEngine.GUI.skin.label);

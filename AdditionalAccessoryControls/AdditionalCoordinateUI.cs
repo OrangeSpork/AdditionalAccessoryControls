@@ -1,5 +1,6 @@
 ﻿using AIChara;
 using BepInEx.Logging;
+using KKAPI.Maker;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -69,6 +70,9 @@ namespace AdditionalAccessoryControls
 
         private void OnGUI()
         {
+            if (!MakerAPI.InsideAndLoaded)
+                return;
+
             if (!guiLoaded)
             {
                 labelStyle = new GUIStyle(UnityEngine.GUI.skin.label);

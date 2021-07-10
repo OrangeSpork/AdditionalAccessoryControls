@@ -1,6 +1,8 @@
 ﻿using AIChara;
 using BepInEx.Logging;
+using KKAPI.Maker;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -110,6 +112,9 @@ namespace AdditionalAccessoryControls
 
         private void OnGUI()
         {
+            if (!MakerAPI.InsideAndLoaded)
+                return;
+
             if (!guiLoaded)
             {
                 labelStyle = new GUIStyle(UnityEngine.GUI.skin.label);
@@ -201,6 +206,13 @@ namespace AdditionalAccessoryControls
                     if (GUILayout.Button("Hair: Ext", GUILayout.ExpandWidth(false))) searchTerm = "ct_hairO";
                     GUILayout.EndHorizontal();
 
+                    GUILayout.BeginHorizontal(expandLayoutOption);
+                    if (GUILayout.Button("Tongue", GUILayout.ExpandWidth(false))) searchTerm = "o_tang";
+                    if (GUILayout.Button("Teeth", GUILayout.ExpandWidth(false))) searchTerm = "o_tooth";
+                    if (GUILayout.Button("Eyelashes", GUILayout.ExpandWidth(false))) searchTerm = "o_eyelashes";
+                    if (GUILayout.Button("Head (Lips & Eyebrows)", GUILayout.ExpandWidth(false))) searchTerm = "o_head";
+                    GUILayout.EndHorizontal();
+
                     accScrollPosition = GUILayout.BeginScrollView(accScrollPosition, GUILayout.Height(100));
                     GUILayout.BeginVertical();
                     GUILayout.Label("Accessories - Parent to the slot to share parents, parent to N_Move (one or two deep from the slot) to parent to the accessory or choose a more specific bone.");
@@ -243,15 +255,50 @@ namespace AdditionalAccessoryControls
                 BuildObjectTree(Root, 0);
                 GUILayout.EndScrollView();
 
-               
+
+                int vertexCount = SkinnedMeshRendererCheck();
                 GUILayout.BeginHorizontal(expandLayoutOption);
                 GUILayout.FlexibleSpace();
                 if (SelectedParent != null)
                 {
+                    
                     if (GUILayout.Button($"Attach to Selected Parent: {SelectedParentShort}", GUILayout.ExpandWidth(false)))
                     {
-                        Controller.SetAdvancedParent(SelectedParent, CurrentSlot.SlotNumber);
+                        if (vertices.Length > 0)
+                        {
+                            ChaControl.SetAccessoryPos(CurrentSlot.SlotNumber, 0, nMoveDiff.x, false, 1);
+                            ChaControl.SetAccessoryPos(CurrentSlot.SlotNumber, 0, nMoveDiff.y, false, 2);
+                            ChaControl.SetAccessoryPos(CurrentSlot.SlotNumber, 0, nMoveDiff.z, false, 4);
+                            GameObject.Find("CharaCustom").GetComponentInChildren<CharaCustom.CustomAcsCorrectSet>().UpdateCustomUI();
+                            Controller.SetAdvancedParent(SelectedParent + "|" + vertices, CurrentSlot.SlotNumber);                            
+                        }
+                        else
+                        {
+                            Controller.SetAdvancedParent(SelectedParent, CurrentSlot.SlotNumber);
+                        }
                         AdditionalAccessoryControlsPlugin.Instance.RefreshAdvancedParentLabel();
+                    }                    
+                    if (vertexCount > 0)
+                    {
+                        if (vertices == "")
+                            vertices = "0";
+                        else if (int.Parse(vertices) >= vertexCount)
+                            vertices = (vertexCount - 1).ToString();
+
+                        GUILayout.Label("Vertex Index: ");
+                        vertices = GUILayout.TextField(vertices, GUILayout.Width(60));
+                        if (!int.TryParse(vertices, out int result))
+                            vertices = "0";
+
+                        if (GUILayout.Button("Select Closest Vertex", GUILayout.ExpandWidth(false)))
+                        {
+                            StartCoroutine(DoFindClosestVertice());
+                        }
+                        GUILayout.Label($" (of {vertexCount})");
+                    }
+                    else
+                    {
+                        vertices = "";
                     }
                 }
                 else
@@ -260,12 +307,22 @@ namespace AdditionalAccessoryControls
                 }
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
+                if (vertexCount > 0)
+                {
+                    GUILayout.BeginHorizontal(expandLayoutOption);
+                    GUILayout.Label("Position the accessory to target location. Click 'Select Closest Vertex' to find index #. Click Attach, then fine adjust position. Or direct enter Index #");
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                }
 
-                
+
+
             }
             GUILayout.EndVertical();
             UnityEngine.GUI.DragWindow();
         }
+
+        private string vertices = "";
 
         private HashSet<GameObject> openedBones = new HashSet<GameObject>();
 
@@ -340,6 +397,65 @@ namespace AdditionalAccessoryControls
                 nowGO = nowGO.transform.parent.gameObject;
             };
             return fullParentString;
+        }
+
+        private int SkinnedMeshRendererCheck()
+        {
+            if (SelectedParent == null || SelectedParent.Length == 0)
+                return -1;
+
+            SkinnedMeshRenderer smr = ChaControl.transform.Find(SelectedParent)?.GetComponent<SkinnedMeshRenderer>();
+            if (smr != null)
+                return smr.sharedMesh.vertexCount;
+            else
+                return -1;
+        }
+
+        Vector3 nMoveDiff;
+        List<Vector3> vertexList = new List<Vector3>();
+        private IEnumerator DoFindClosestVertice()
+        {
+            yield return new WaitForEndOfFrame();
+
+            Transform accMoveTransform = Controller.GetAccessorialMoveTransform(CurrentSlot.SlotNumber);
+            if (accMoveTransform == null)
+            {
+                vertices = "0";
+            }
+            else
+            {
+#if DEBUG
+                Log.LogInfo($"Current ACC Move Transform Location {accMoveTransform.position}");
+#endif
+
+                Transform parentTransform = ChaControl.transform.Find(SelectedParent);
+                SkinnedMeshRenderer smr = parentTransform?.GetComponent<SkinnedMeshRenderer>();
+                if (parentTransform == null || smr == null)
+                {
+                    vertices = "0";
+                }
+                Mesh mesh = new Mesh();
+                smr.BakeMesh(mesh);
+                mesh.GetVertices(vertexList);
+
+                int closestVertexIndex = 0;
+                float closestDistance = float.MaxValue;
+                for (int i = 0; i < vertexList.Count; i++)
+                {
+                    Vector3 worldPosition = parentTransform.TransformPoint(vertexList[i]);
+                    float distance = Vector3.Distance(worldPosition, accMoveTransform.position);
+                    nMoveDiff = accMoveTransform.position - worldPosition;
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestVertexIndex = i;
+#if DEBUG
+                        Log.LogInfo($"Closer: Index: {i} Distance: {distance} Pos: {worldPosition} New NMove: {nMoveDiff}");
+#endif
+                    }
+                }
+                vertices = closestVertexIndex.ToString();
+            }
         }
 
         private string[] AvailableSlots()
