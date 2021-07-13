@@ -88,7 +88,10 @@ namespace AdditionalAccessoryControls
                     count++;
                 }
             }
-            return averageDelta / count;
+            if (count > 0)
+                return averageDelta / count;
+            else
+                return averageDelta;
         }
 
         private bool NeedsTimeUpdate()
