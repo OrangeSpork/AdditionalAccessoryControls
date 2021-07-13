@@ -60,3 +60,9 @@ If the attachment point is a SkinnedMeshRenderer (such as the tongue, teeth, eye
 
 Note 1: If you remove the think the accessory is parented to, it will revert to it's nominal parent location and wait for the parent to reappear. There is a performance penalty for this so clear parents you no longer intend to use.\
 Note 2: When linking accessories together, use the same base parent location or there will be small differences in positioning depending on animation.
+
+Body Mesh Attachment: The special body search button allows attaching accessories to the body mesh. The attachment process works like other mesh parents. However, the body mesh, being animated, is more expensive to attach to. The first accessory attached to the body mesh incurs an overhead in processing (additional body mesh accessories on the same character are free however). To help control the cost, position extrapolation is used to cut frame hit, but can cause a slight choppiness to the accessory positioning, fast enough action will bypass this and force a real update. This can be controlled in plugin settings:
+
+- Update Body Mesh Parented Accessories Every N Frames: Controls how many frames are real mesh synchronizations vs. interpolations. A value of 1 updates every frame (best results, worst performance). 2 updates every other frame, 3 every 3 frames and so on. 
+- History Key Frames for Body Mesh Parents (Advanced Option): How many frames of back history is used to build interpolation. 3 is more responsive, 5 is smoother.
+- Body Mesh Parent Fast Action Threshold (Advanced Option): How fast moving things must be to force real calculation instead of interpolation.
