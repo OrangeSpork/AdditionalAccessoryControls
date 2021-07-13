@@ -10,25 +10,38 @@ namespace AdditionalAccessoryControls
     public class AdditionalAccessoryAdvancedParentSkinnedMeshHelper : MonoBehaviour
     {
 
+        public bool RenderAlways { get; set; } = false;
+
+        public int UpdateNFrames { get; set; }
+        public int FrameHistoryCount { get; set; }
+        public float FastActionThreshold { get; set; }
+
         private ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
         private Mesh bakedMesh;
         private List<Vector3> vertexList;
-        private List<Vector3> normalList;
+   //     private List<Vector3> normalList;
 
         private SkinnedMeshRenderer skinnedMeshRenderer;
 
         private float[] blendShapeWeights;
+
+        private Dictionary<int, List<SkinnedMeshUpdateFrame>> frameSet = new Dictionary<int, List<SkinnedMeshUpdateFrame>>();
+        private Vector3 lastTransformPosition = Vector3.zero;
 
         // Listeners
         private Dictionary<int, List<Action<SkinnedMeshRenderedVertex>>> SkinnedMeshRendererListeners = new Dictionary<int, List<Action<SkinnedMeshRenderedVertex>>>();
 
         private void Awake()
         {
+            UpdateNFrames = AdditionalAccessoryControlsPlugin.UpdateBodyPositionEveryNFrames.Value;
+            FrameHistoryCount = AdditionalAccessoryControlsPlugin.BodyPositionHistoryFrames.Value;
+            FastActionThreshold = AdditionalAccessoryControlsPlugin.BodyPositionFastActionThreshold.Value;
+
             skinnedMeshRenderer = gameObject.GetComponent<SkinnedMeshRenderer>();
             bakedMesh = new Mesh();
             vertexList = new List<Vector3>();
-            normalList = new List<Vector3>();
+   //         normalList = new List<Vector3>();
 
 #if DEBUG
             Log.LogInfo($"Bringing online new mesh helper for {gameObject.name}");
@@ -49,9 +62,6 @@ namespace AdditionalAccessoryControls
                 float weight = skinnedMeshRenderer.GetBlendShapeWeight(i);
                 if (!ApproximatelyEquals(weight, blendShapeWeights[i]))
                 {
-#if DEBUG
-                    Log.LogInfo($"Index {i} Old {blendShapeWeights[i]:000.00000} New {weight:000.00000}");
-#endif
                     dirty = true;
                 }
 
@@ -66,25 +76,86 @@ namespace AdditionalAccessoryControls
             return Math.Abs(one - two) < 0.0001;
         }
 
+        private Vector3 AverageDelta(List<SkinnedMeshUpdateFrame> frames)
+        {
+            Vector3 averageDelta = Vector3.zero;
+            int count = 0;
+            foreach (SkinnedMeshUpdateFrame frame in frames)
+            {
+                if (frame.delta != Vector3.zero)
+                {
+                    averageDelta += frame.delta;
+                    count++;
+                }
+            }
+            return averageDelta / count;
+        }
+
+        private bool NeedsTimeUpdate()
+        {
+            if (RenderAlways)
+            {
+
+                lastTransformPosition = transform.position;
+                foreach (List<SkinnedMeshUpdateFrame> list in frameSet.Values)
+                {
+                    if (list.Count < FrameHistoryCount)
+                        return true;
+
+                    if (AverageDelta(list).sqrMagnitude > FastActionThreshold)
+                    {
+                        return true;
+                    }
+                }
+
+                if (Time.frameCount % UpdateNFrames == 0)
+                    return true;
+                else
+                    return false;
+            }
+            else
+                return false;
+        }
+
         private void LateUpdate()
         {
-            if (BlendShapesDirty())
+            bool updated = false;
+            if (BlendShapesDirty() || NeedsTimeUpdate())
             {
-#if DEBUG
-                Log.LogInfo($"Mesh {gameObject.name} Dirty");
-#endif
                 skinnedMeshRenderer.BakeMesh(bakedMesh);
 
                 bakedMesh.GetVertices(vertexList);
-                bakedMesh.GetNormals(normalList);
+                //             bakedMesh.GetNormals(normalList);
+
+                updated = true;                
             }
 
             foreach (int vertexId in SkinnedMeshRendererListeners.Keys)
             {
+                List<SkinnedMeshUpdateFrame> frameList = frameSet[vertexId];
                 Vector3 verticeLocation = vertexList[vertexId];
-                Vector3 normalDirection = normalList[vertexId];
+                //             Vector3 normalDirection = normalList[vertexId];
 
-                SkinnedMeshRenderedVertex vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), transform.TransformDirection(normalDirection), verticeLocation, normalDirection);
+                SkinnedMeshRenderedVertex vertex;
+                if (updated)
+                {                    
+                    frameList.Add(new SkinnedMeshUpdateFrame(verticeLocation, Time.time, Vector3.zero));
+                    if (frameList.Count > 1)
+                        frameList[frameList.Count - 2] = new SkinnedMeshUpdateFrame(frameList[frameList.Count - 2].position, frameList[frameList.Count-2].time ,(frameList[frameList.Count - 1].position - frameList[frameList.Count - 2].position) / (frameList[frameList.Count - 1].time - frameList[frameList.Count - 2].time));
+                    while (frameList.Count > FrameHistoryCount)
+                        frameList.RemoveAt(0);
+
+                    vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), Vector3.zero, verticeLocation, Vector3.zero);
+                     //                SkinnedMeshRenderedVertex vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), transform.TransformDirection(normalDirection), verticeLocation, normalDirection);
+                }
+                else
+                {
+                    // Extrapolation time
+                    Vector3 extrapolatedMovement = AverageDelta(frameList);
+                    Vector3 predictedPosition = frameList[frameList.Count - 1].position + (extrapolatedMovement * (Time.time - frameList[frameList.Count - 1].time)) ;
+                    vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(predictedPosition), Vector3.zero, predictedPosition, Vector3.zero);
+                }
+
                 foreach (Action<SkinnedMeshRenderedVertex> listener in SkinnedMeshRendererListeners[vertexId])
                 {
                     listener.Invoke(vertex);
@@ -97,6 +168,7 @@ namespace AdditionalAccessoryControls
             if (!SkinnedMeshRendererListeners.ContainsKey(vertexId))
             {
                 SkinnedMeshRendererListeners[vertexId] = new List<Action<SkinnedMeshRenderedVertex>>();
+                frameSet[vertexId] = new List<SkinnedMeshUpdateFrame>();
             }
 
             SkinnedMeshRendererListeners[vertexId].Add(updateListener);
@@ -114,6 +186,7 @@ namespace AdditionalAccessoryControls
                 if (SkinnedMeshRendererListeners[vertexId].Count == 0)
                 {
                     SkinnedMeshRendererListeners.Remove(vertexId);
+                    frameSet.Remove(vertexId);
                 }
 
 #if DEBUG
@@ -130,6 +203,20 @@ namespace AdditionalAccessoryControls
             }
         }
 
+    }
+
+    internal struct SkinnedMeshUpdateFrame
+    {
+        public Vector3 position { get; set; }
+        public float time { get; set; }
+        public Vector3 delta { get; set; }
+
+        public SkinnedMeshUpdateFrame(Vector3 pos, float time, Vector3 delta)
+        {
+            this.position = pos;
+            this.time = time;
+            this.delta = delta;
+        }
     }
 
     public struct SkinnedMeshRenderedVertex

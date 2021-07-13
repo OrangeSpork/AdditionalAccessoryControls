@@ -1910,6 +1910,11 @@ namespace AdditionalAccessoryControls
             return slot < 20 ? ChaControl.cmpAccessory[slot]?.trfMove01 : GetMoreAccessorialCmpAccessory(slot - 20)?.trfMove01;
         }
 
+        public Transform GetAccessorialObject(int slot)
+        {
+            return slot < 20 ? ChaControl.objAccessory[slot]?.transform : GetMoreAccessorialAccObject(slot - 20)?.transform;
+        }
+
         // Debug Helpers
         private void dumpSlotData()
         {

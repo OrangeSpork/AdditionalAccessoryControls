@@ -75,6 +75,9 @@ namespace AdditionalAccessoryControls
                             }
 
                             meshHelper = parentTransform.gameObject.GetOrAddComponent<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
+                            if (parentTransform.gameObject.name == "o_body_cf")
+                                meshHelper.RenderAlways = true;
+
                             meshHelper.RegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
 
 #if DEBUG
@@ -310,7 +313,7 @@ namespace AdditionalAccessoryControls
             gameObject.transform.localEulerAngles = Vector3.zero;
 
             gameObject.transform.position = vertex.position;
-            gameObject.transform.eulerAngles = vertex.eulerAngles;
+     //       gameObject.transform.eulerAngles = vertex.eulerAngles;
         }
 
         private void LateUpdate()

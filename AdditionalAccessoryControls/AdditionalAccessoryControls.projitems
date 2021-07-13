@@ -24,5 +24,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryUI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryVisibilityRules.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalCoordinateUI.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigurationManagerAttributes.cs" />
   </ItemGroup>
 </Project>

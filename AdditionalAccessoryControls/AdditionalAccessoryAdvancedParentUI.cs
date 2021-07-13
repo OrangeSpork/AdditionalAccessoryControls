@@ -211,6 +211,7 @@ namespace AdditionalAccessoryControls
                     if (GUILayout.Button("Teeth", GUILayout.ExpandWidth(false))) searchTerm = "o_tooth";
                     if (GUILayout.Button("Eyelashes", GUILayout.ExpandWidth(false))) searchTerm = "o_eyelashes";
                     if (GUILayout.Button("Head (Lips & Eyebrows)", GUILayout.ExpandWidth(false))) searchTerm = "o_head";
+                    if (GUILayout.Button("Body", GUILayout.ExpandWidth(false))) searchTerm = "o_body_cf";
                     GUILayout.EndHorizontal();
 
                     accScrollPosition = GUILayout.BeginScrollView(accScrollPosition, GUILayout.Height(100));
@@ -252,7 +253,10 @@ namespace AdditionalAccessoryControls
                     openedBones.Clear();
 
                 scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, GUI.skin.box, GUILayout.Height(300));
-                BuildObjectTree(Root, 0);
+                if (searchTerm == "o_body_cf")
+                    BuildObjectTree(Body, 0);
+                else
+                    BuildObjectTree(Root, 0);
                 GUILayout.EndScrollView();
 
 
@@ -363,7 +367,7 @@ namespace AdditionalAccessoryControls
                 GUILayout.EndHorizontal();
                 GUI.color = c;
             }
-            if (searchTerm.Length > 0 || openedBones.Contains(go))
+            if (go.name != "o_body_cf" && (searchTerm.Length > 0 || openedBones.Contains(go)))
             {
                 foreach (Transform child in go.transform)
                 {
@@ -384,6 +388,14 @@ namespace AdditionalAccessoryControls
             get
             {
                 return ChaControl.objAnim.transform.Find("cf_J_Root").gameObject;
+            }
+        }
+
+        private GameObject Body
+        {
+            get
+            {
+                return ChaControl.gameObject.transform.Find("BodyTop/p_cf_body_00/n_o_root/n_body_base/n_body_cf/o_body_cf").gameObject;
             }
         }
 
@@ -443,14 +455,15 @@ namespace AdditionalAccessoryControls
                 for (int i = 0; i < vertexList.Count; i++)
                 {
                     Vector3 worldPosition = parentTransform.TransformPoint(vertexList[i]);
-                    float distance = Vector3.Distance(worldPosition, accMoveTransform.position);
-                    nMoveDiff = accMoveTransform.position - worldPosition;
+                    Vector3 accWorldPosition = accMoveTransform.position;
+                    float distance = Vector3.Distance(worldPosition, accWorldPosition);                    
                     if (distance < closestDistance)
                     {
                         closestDistance = distance;
                         closestVertexIndex = i;
+                        nMoveDiff = accWorldPosition - worldPosition;
 #if DEBUG
-                        Log.LogInfo($"Closer: Index: {i} Distance: {distance} Pos: {worldPosition} New NMove: {nMoveDiff}");
+                        Log.LogInfo($"Closer: Index: {i} Distance: {distance} Pos: {worldPosition.x:0.0000} {worldPosition.y:0.0000} {worldPosition.z:0.0000} Acc Pos: {accMoveTransform.position.x:0.0000} {accMoveTransform.position.y:0.0000} {accMoveTransform.position.z:0.0000} New NMove: {nMoveDiff.x:0.0000} {nMoveDiff.y:0.0000} {nMoveDiff.z:0.0000}");
 #endif
                     }
                 }
