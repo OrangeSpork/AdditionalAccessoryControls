@@ -137,7 +137,11 @@ namespace AdditionalAccessoryControls
                 //             Vector3 normalDirection = normalList[vertexId];
 
                 SkinnedMeshRenderedVertex vertex;
-                if (updated)
+                if (!RenderAlways)
+                {
+                    vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), Vector3.zero, verticeLocation, Vector3.zero);
+                }
+                else if (updated)
                 {                    
                     frameList.Add(new SkinnedMeshUpdateFrame(verticeLocation, Time.time, Vector3.zero));
                     if (frameList.Count > 1)
