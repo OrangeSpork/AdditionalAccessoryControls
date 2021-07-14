@@ -211,7 +211,9 @@ namespace AdditionalAccessoryControls
                     if (GUILayout.Button("Teeth", GUILayout.ExpandWidth(false))) searchTerm = "o_tooth";
                     if (GUILayout.Button("Eyelashes", GUILayout.ExpandWidth(false))) searchTerm = "o_eyelashes";
                     if (GUILayout.Button("Head (Lips & Eyebrows)", GUILayout.ExpandWidth(false))) searchTerm = "o_head";
-                    if (GUILayout.Button("Body", GUILayout.ExpandWidth(false))) searchTerm = "o_body_cf";
+                    if (GUILayout.Button("Body", GUILayout.ExpandWidth(false))) searchTerm = ChaControl.sex == 0 ? "o_body_cm" : "o_body_cf";
+                    if (GUILayout.Button("Penis", GUILayout.ExpandWidth(false))) searchTerm = "cm_o_dan00";
+                    if (GUILayout.Button("Balls", GUILayout.ExpandWidth(false))) searchTerm = "cm_o_dan_f";
                     GUILayout.EndHorizontal();
 
                     accScrollPosition = GUILayout.BeginScrollView(accScrollPosition, GUILayout.Height(100));
@@ -253,8 +255,12 @@ namespace AdditionalAccessoryControls
                     openedBones.Clear();
 
                 scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, GUI.skin.box, GUILayout.Height(300));
-                if (searchTerm == "o_body_cf")
+                if (Body.name == searchTerm)
                     BuildObjectTree(Body, 0);
+                else if (Balls.name == searchTerm)
+                    BuildObjectTree(Balls, 0);
+                else if (Penis.name == searchTerm)
+                    BuildObjectTree(Penis, 0);
                 else
                     BuildObjectTree(Root, 0);
                 GUILayout.EndScrollView();
@@ -367,7 +373,7 @@ namespace AdditionalAccessoryControls
                 GUILayout.EndHorizontal();
                 GUI.color = c;
             }
-            if (go.name != "o_body_cf" && (searchTerm.Length > 0 || openedBones.Contains(go)))
+            if (!AdditionalAccessoryAdvancedParentController.AnimatedBoneNames.Contains(go.name) && (searchTerm.Length > 0 || openedBones.Contains(go)))
             {
                 foreach (Transform child in go.transform)
                 {
@@ -395,7 +401,32 @@ namespace AdditionalAccessoryControls
         {
             get
             {
-                return ChaControl.gameObject.transform.Find("BodyTop/p_cf_body_00/n_o_root/n_body_base/n_body_cf/o_body_cf").gameObject;
+                if (ChaControl.sex == 0)
+                    return ChaControl.gameObject.transform.Find("BodyTop/p_cm_body_00/n_o_root/n_body_base/n_body_cm/o_body_cm").gameObject;
+                else
+                    return ChaControl.gameObject.transform.Find("BodyTop/p_cf_body_00/n_o_root/n_body_base/n_body_cf/o_body_cf").gameObject;
+            }
+        }
+
+        private GameObject Balls
+        {
+            get
+            {
+                if (ChaControl.sex == 0)
+                    return ChaControl.gameObject.transform.Find("BodyTop/p_cm_body_00/n_o_root/n_body_base/N_mnpbset/N_dan/cm_o_dan_f").gameObject;
+                else
+                    return ChaControl.gameObject.transform.Find("BodyTop/p_cf_body_00/n_o_root/n_body_base/N_mnpbset/N_dan/cm_o_dan_f").gameObject;
+            }
+        }
+
+        private GameObject Penis
+        {
+            get
+            {
+                if (ChaControl.sex == 0)
+                    return ChaControl.gameObject.transform.Find("BodyTop/p_cm_body_00/n_o_root/n_body_base/N_mnpbset/N_dan/cm_o_dan00").gameObject;
+                else
+                    return ChaControl.gameObject.transform.Find("BodyTop/p_cf_body_00/n_o_root/n_body_base/N_mnpbset/N_dan/cm_o_dan00").gameObject;
             }
         }
 

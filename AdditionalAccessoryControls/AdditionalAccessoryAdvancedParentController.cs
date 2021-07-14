@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
@@ -75,7 +76,7 @@ namespace AdditionalAccessoryControls
                             }
 
                             meshHelper = parentTransform.gameObject.GetOrAddComponent<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
-                            if (parentTransform.gameObject.name == "o_body_cf")
+                            if (AnimatedBoneNames.Contains(parentTransform.gameObject.name))
                                 meshHelper.RenderAlways = true;
 
                             meshHelper.RegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
@@ -351,5 +352,7 @@ namespace AdditionalAccessoryControls
                 meshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
 
         }
+
+        public static string[] AnimatedBoneNames = { "o_body_cm", "o_body_cf", "cm_o_dan00", "cm_o_dan_f" };
     }
 }
