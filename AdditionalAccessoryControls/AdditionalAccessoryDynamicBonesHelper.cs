@@ -4,6 +4,7 @@ using KKAPI.Chara;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace AdditionalAccessoryControls
@@ -137,59 +138,28 @@ namespace AdditionalAccessoryControls
             if (slotsToMove == null || snapshot == null)
                 return;
 
-            slotsToMove.Sort((i1, i2) => i2.Item2.CompareTo(i1.Item2));
+            List<int> movingSlotNumbers = slotsToMove.Select(t => t.Item1).Distinct<int>().ToList();
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Slots Moving {string.Join(",", movingSlotNumbers)}");
+#endif
 
-            foreach (Tuple<int, int> slot in slotsToMove)
-            {
-                DoMoveSlot(slot.Item1, slot.Item2, current, snapshot);
-            }
-        }
-
-        private void DoMoveSlot(int slotFrom, int slotTo, IList current, IList snapshot)
-        {
+            // Identify slots to move
+            List<object> movingSlots = new List<object>();
             foreach (object sourceNode in snapshot)
             {
-                if (sourceNode == null)
-                    continue;
-
-                if (ExtractSlot(sourceNode) == slotFrom)
+                if (sourceNode != null && movingSlotNumbers.Contains(ExtractSlot(sourceNode)))
                 {
-#if DEBUG
-                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Updating slot {slotFrom} to slot {slotTo} On {sourceNode}");
-#endif
-                    if (!Update(slotFrom, slotTo, current, sourceNode))
-                    {
-                        UpdateSlot(sourceNode, slotTo);
-                        current.Add(sourceNode);
-#if DEBUG
-                        AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"New: {current}");
-#endif
-                    }
+                    movingSlots.Add(sourceNode);
                 }
             }
-        }
 
-        private bool Update(int slotFrom, int slotTo, IList currentList, object sourceNode)
-        {
-            if (currentList == null || currentList.Count == 0)
-                return false;
-
-            foreach (object current in currentList)
+            // Update slot numbers
+            foreach (object node in movingSlots)
             {
-                if (current == null)
-                    continue;
-
-                if (CheckKey(current, sourceNode))
-                {
-                    UpdateSlot(current, slotTo);
-#if DEBUG
-                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Found existing record, updating {current}");
-#endif
-                    return true;
-                }
+                UpdateSlot(node, slotsToMove.Find(t => t.Item1 == ExtractSlot(node)).Item2);
+                current.Add(node);
             }
-            return false;
-        }
+        }       
 
         private void ClearRemovedNodes(List<int> slotsToRemove, IList node)
         {

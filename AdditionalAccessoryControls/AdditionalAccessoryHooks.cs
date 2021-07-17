@@ -204,6 +204,28 @@ namespace AdditionalAccessoryControls
             }
         }
 
+        [HarmonyPrefix, HarmonyPatch(typeof(OCIChar), "LoadClothesFile")]
+        static void OnStudioCoordLoadPrefix(OCIChar __instance)
+        {
+            try
+            {
+#if DEBUG
+                AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Saving Coord Preload Snapshots");
+#endif
+                // Find Controller
+                AdditionalAccessoryControlsController aacController = __instance.charInfo.gameObject.GetComponent<AdditionalAccessoryControlsController>();
+                if (aacController != null)
+                {
+                    aacController.MaterialEditorHelper.UpdateOnCoordinateLoadSnapshot();
+                    aacController.DBHelper.UpdateOnCoordinateLoadSnapshot();
+                }
+            }
+            catch (Exception e)
+            {
+                AdditionalAccessoryControlsPlugin.Instance.Log.LogWarning($"Exception in AACP Hook, Character Accessories may not be restored after this load. {e.Message} {e.StackTrace}");
+            }
+        }
+
         [HarmonyPrefix, HarmonyPatch(typeof(ChaFileCoordinate), "LoadFile", new Type[] { typeof(System.IO.Stream), typeof(int) })]
         static void OnCoordLoadPrefix(ChaFileCoordinate __instance)
         {
@@ -223,6 +245,10 @@ namespace AdditionalAccessoryControls
                 {
                     return;
                 }
+
+#if DEBUG
+                AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Saving Coord Preload Snapshots");
+#endif
 
                 // Find Controller
                 AdditionalAccessoryControlsController aacController = owner.gameObject.GetComponent<AdditionalAccessoryControlsController>();

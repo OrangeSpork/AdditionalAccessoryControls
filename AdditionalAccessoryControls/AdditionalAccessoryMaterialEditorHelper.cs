@@ -4,6 +4,7 @@ using KKAPI.Chara;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -49,6 +50,8 @@ namespace AdditionalAccessoryControls
                 StringBuilder sb = new StringBuilder();
                 foreach (object o in list)
                 {
+                    if (ExtractObjectType(o) != 2)
+                        continue;
                     sb.Append($" ({ExtractObjectType(o)}-{ExtractSlot(o)})");
                 }
                 return sb.ToString();
@@ -193,58 +196,27 @@ namespace AdditionalAccessoryControls
             if (slotsToMove == null || snapshot == null)
                 return;
 
-            slotsToMove.Sort((i1, i2) => i2.Item2.CompareTo(i1.Item2));
+            List<int> movingSlotNumbers = slotsToMove.Select(t => t.Item1).Distinct<int>().ToList();
+#if DEBUG
+            AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Slots Moving {string.Join(",", movingSlotNumbers)}");
+#endif
 
-            foreach (Tuple<int, int> slot in slotsToMove)
-            {
-                DoMoveSlot(slot.Item1, slot.Item2, current, snapshot);
-            }
-        }
-
-        private void DoMoveSlot(int slotFrom, int slotTo, IList current, IList snapshot)
-        {            
+            // Identify slots to move
+            List<object> movingSlots = new List<object>();
             foreach (object sourceNode in snapshot)
             {
-                if (sourceNode == null)
-                    continue;
-
-                if (ExtractObjectType(sourceNode) == 2 && ExtractSlot(sourceNode) == slotFrom)
+                if (sourceNode != null && ExtractObjectType(sourceNode) == 2 && movingSlotNumbers.Contains(ExtractSlot(sourceNode)))
                 {
-#if DEBUG
-                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Updating slot {slotFrom} to slot {slotTo} On {sourceNode}");
-#endif
-                    if (!Update(slotFrom, slotTo, current))
-                    {
-                        UpdateSlot(sourceNode, slotTo);
-                        current.Add(sourceNode);
-#if DEBUG
-                        AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"New: {current}");
-#endif
-                    }
+                    movingSlots.Add(sourceNode);
                 }
             }
-        }
 
-        private bool Update(int slotFrom, int slotTo, IList list)
-        {
-            if (list == null || list.Count == 0)
-                return false;
-
-            foreach (object child in list)
+            // Update slot numbers
+            foreach (object node in movingSlots)
             {
-                if (child == null)
-                    continue;
-
-                if (ExtractObjectType(child) == 2 && ExtractSlot(child) == slotFrom)
-                {
-                    UpdateSlot(child, slotTo);
-#if DEBUG
-                    AdditionalAccessoryControlsPlugin.Instance.Log.LogInfo($"Found existing record, updating {child}");
-#endif
-                    return true;
-                }
-            }
-            return false;
+                UpdateSlot(node, slotsToMove.Find(t => t.Item1 == ExtractSlot(node)).Item2);
+                current.Add(node);
+            }          
         }
 
         private void ClearRemovedNodes(List<int> slotsToRemove, IList node)

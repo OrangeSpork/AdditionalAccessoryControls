@@ -333,7 +333,10 @@ namespace AdditionalAccessoryControls
 #endif
                         if (newSlotNumber == -1)
                         {
-                            newSlotNumber = AddMoreAccessoriesPart(slot.PartsInfo, -1) + 20;
+                            newSlotNumber = AddMoreAccessoriesPart(slot.PartsInfo, -1, newSlotData.Count - 20) + 20;
+#if DEBUG
+                            Log.LogInfo($"Created slot {newSlotNumber}");
+#endif
                             AdditionalAccessorySlotData newSlot = AdditionalAccessorySlotData.Copy(slot, newSlotNumber, true);
                             newSlotData.Add(newSlot);
                             charaSlots.Add(newSlot);
@@ -351,7 +354,7 @@ namespace AdditionalAccessoryControls
                             }
                             else
                             {
-                                AddMoreAccessoriesPart(slot.PartsInfo, newSlotNumber - 20);
+                                AddMoreAccessoriesPart(slot.PartsInfo, newSlotNumber - 20, newSlotData.Count - 20);
                                 AdditionalAccessorySlotData newSlot = AdditionalAccessorySlotData.Copy(slot, newSlotNumber, true);
                                 newSlotData[newSlotNumber] = newSlot;
                                 charaSlots.Add(newSlot);
@@ -1057,7 +1060,7 @@ namespace AdditionalAccessoryControls
             return null;
         }
 
-        private int AddMoreAccessoriesPart(ChaFileAccessory.PartsInfo partsInfo, int slotNumber)
+        private int AddMoreAccessoriesPart(ChaFileAccessory.PartsInfo partsInfo, int slotNumber, int currentSlotCount)
         {
 #if DEBUG
             Log.LogInfo($"Setting slot {slotNumber} to {partsInfo.id}|{partsInfo.type}");
@@ -1091,8 +1094,17 @@ namespace AdditionalAccessoryControls
 
                     if (slotNumber == -1)
                     {
-                        partsList.Add(partsInfo);
-                        objectList.Add(accessoryObjectType.GetConstructor(Type.EmptyTypes).Invoke(null));
+                        if (currentSlotCount < objectList.Count)
+                        {
+                            partsList[currentSlotCount] = partsInfo;
+                            objectList[currentSlotCount] = accessoryObjectType.GetConstructor(Type.EmptyTypes).Invoke(null);
+                            return currentSlotCount;
+                        }
+                        else
+                        {
+                            partsList.Add(partsInfo);
+                            objectList.Add(accessoryObjectType.GetConstructor(Type.EmptyTypes).Invoke(null));
+                        }
                     }
                     else
                     {
@@ -1173,6 +1185,9 @@ namespace AdditionalAccessoryControls
                 if (slotData == null || hidingAccessoriesForPicture || runningVisibilityRules)
                     return;
 
+                if (loading && !startup)
+                    return;
+
                 runningVisibilityRules = true;
 
                 foreach (AdditionalAccessorySlotData slot in slotData)
@@ -1201,7 +1216,9 @@ namespace AdditionalAccessoryControls
             if (slot.VisibilityRules == null || hidingAccessoriesForPicture || (startup && AdditionalAccessoryControlsPlugin.Instance.StudioSceneLoading) || (startup && KKAPI.Studio.StudioAPI.InsideStudio && !HasStudioApplyVisibilityRule(slot)))
             {
                 return;
-            }    
+            }
+            if (loading && !startup)
+                return;
             
             if (ruleUpdate)
             {
@@ -1215,7 +1232,9 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                 Log.LogInfo($"Hiding Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to startup rules");
 #endif
-                try { ChaControl.SetAccessoryState(slot.SlotNumber, false); } catch (Exception e) { Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}");  }
+                try { ChaControl.SetAccessoryState(slot.SlotNumber, false); } catch (Exception e) { 
+                    Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}");  
+                }
             } 
             else if (hstart && slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.H_START, AdditionalAccessoryVisibilityRulesModifiers.SHOW))
             {
@@ -1258,7 +1277,11 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                             Log.LogInfo($"Hiding Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to clothes rules");
 #endif
-                            try { ChaControl.SetAccessoryState(slot.SlotNumber, false); } catch (Exception e) { Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}"); }
+                            try { ChaControl.SetAccessoryState(slot.SlotNumber, false); } catch (Exception e) {
+#if DEBUG
+                                Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}");
+#endif
+                            }
                         }
                     }
                     else 
@@ -1268,7 +1291,11 @@ namespace AdditionalAccessoryControls
 #if DEBUG
                             Log.LogInfo($"Showing Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to clothes rules");
 #endif
-                            try { ChaControl.SetAccessoryState(slot.SlotNumber, true); } catch (Exception e) { Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}"); }
+                            try { ChaControl.SetAccessoryState(slot.SlotNumber, true); } catch (Exception e) {
+#if DEBUG
+                                Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}");
+#endif
+                            }
                         }
                     }
                 }
