@@ -5,6 +5,7 @@ using AIProject;
 using CharaCustom;
 using HarmonyLib;
 using Manager;
+using RootMotion.FinalIK;
 using Studio;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,18 @@ namespace AdditionalAccessoryControls
         {
             Harmony harmony = new Harmony(AdditionalAccessoryControlsPlugin.GUID);
             harmony.PatchAll(typeof(AdditionalAccessoryHooks));           
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(FKCtrl), "LateUpdate")]
+        static void FKLateUpdatePostfix(FKCtrl __instance)
+        {
+            AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance.gameObject.GetComponent<ChaControl>(), false, true, false);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "LateUpdateForce")]
+        static void ChaControlLateUpdateForcePostfix(ChaControl __instance)
+        {
+            AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance, false, false, true);
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(CmpBase), "EnableDynamicBones")]

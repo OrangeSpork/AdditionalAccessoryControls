@@ -1,5 +1,9 @@
-﻿using BepInEx.Logging;
+﻿using AIChara;
+using BepInEx.Logging;
+using RootMotion.FinalIK;
+using Studio;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -10,16 +14,27 @@ namespace AdditionalAccessoryControls
     public class AdditionalAccessoryAdvancedParentSkinnedMeshHelper : MonoBehaviour
     {
 
+        public OCIChar OCIChar { get; set; }
+
+        public ChaControl ChaControl { get; set; }
+
         public bool RenderAlways { get; set; } = false;
 
         public int UpdateNFrames { get; set; }
         public int FrameHistoryCount { get; set; }
         public float FastActionThreshold { get; set; }
 
+        private bool FKUpdated = false;
+        private bool IKUpdated = false;
+        private bool CHAControlUpdated = false;
+        private bool FKControlled = false;
+        private bool IKControlled = false;
+
         private ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
         private Mesh bakedMesh;
         private List<Vector3> vertexList;
+        
    //     private List<Vector3> normalList;
 
         private SkinnedMeshRenderer skinnedMeshRenderer;
@@ -27,13 +42,27 @@ namespace AdditionalAccessoryControls
         private float[] blendShapeWeights;
 
         private Dictionary<int, List<SkinnedMeshUpdateFrame>> frameSet = new Dictionary<int, List<SkinnedMeshUpdateFrame>>();
-        private Vector3 lastTransformPosition = Vector3.zero;
 
         // Listeners
         private Dictionary<int, List<Action<SkinnedMeshRenderedVertex>>> SkinnedMeshRendererListeners = new Dictionary<int, List<Action<SkinnedMeshRenderedVertex>>>();
 
-        private void Awake()
+        private static List<AdditionalAccessoryAdvancedParentSkinnedMeshHelper> Helpers = new List<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
+
+        private Delegate PostUpdateIKDelegate;
+
+        public static void ExternalUpdate(ChaControl chaControl, bool IKUpdate, bool FKUpdate, bool ChaControlUpdate)
         {
+            foreach (AdditionalAccessoryAdvancedParentSkinnedMeshHelper helper in Helpers)
+            {
+                if (helper.ChaControl == chaControl)
+                    helper.ExternalUpdate(IKUpdate, FKUpdate, ChaControlUpdate);
+            }
+        }
+
+        private void Awake()
+        {            
+            Helpers.Add(this);
+
             UpdateNFrames = AdditionalAccessoryControlsPlugin.UpdateBodyPositionEveryNFrames.Value;
             FrameHistoryCount = AdditionalAccessoryControlsPlugin.BodyPositionHistoryFrames.Value;
             FastActionThreshold = AdditionalAccessoryControlsPlugin.BodyPositionFastActionThreshold.Value;
@@ -46,6 +75,55 @@ namespace AdditionalAccessoryControls
 #if DEBUG
             Log.LogInfo($"Bringing online new mesh helper for {gameObject.name}");
 #endif
+        }
+
+        private void OnDestroy()
+        {
+            Helpers.Remove(this);
+        }
+
+        private void Update()
+        {
+            if (KKAPI.Studio.StudioAPI.InsideStudio && ChaControl != null && OCIChar == null)
+            {
+                OCIChar = KKAPI.Studio.StudioObjectExtensions.GetOCIChar(ChaControl);
+            }
+
+            FKUpdated = false;
+            IKUpdated = false;
+            CHAControlUpdated = false;
+
+            if (RenderAlways && OCIChar != null)
+            {
+                if (OCIChar.fkCtrl.enabled)
+                {
+                    FKControlled = true;
+                }
+                else
+                {
+                    FKControlled = false;
+                    FKUpdated = true;
+                }
+                if (OCIChar.finalIK.enabled)
+                {
+                    IKControlled = true;
+                    if (PostUpdateIKDelegate == null)
+                    {
+                        PostUpdateIKDelegate = new IKSolver.UpdateDelegate(() =>
+                        {
+                            ExternalUpdate(true, false, false);
+                        });
+                        OCIChar.finalIK.solver.OnPostUpdate = (IKSolver.UpdateDelegate)Delegate.Combine(OCIChar.finalIK.solver.OnPostUpdate, PostUpdateIKDelegate);
+                    }
+                }
+                else
+                {
+                    IKControlled = false;
+                    IKUpdated = true;                    
+                    OCIChar.finalIK.solver.OnPostUpdate = (IKSolver.UpdateDelegate)Delegate.Remove(OCIChar.finalIK.solver.OnPostUpdate, PostUpdateIKDelegate);
+                    PostUpdateIKDelegate = null;
+                }
+            }            
         }
 
         private bool BlendShapesDirty()
@@ -94,12 +172,16 @@ namespace AdditionalAccessoryControls
                 return averageDelta;
         }
 
+
+        float lastUpdateTime = 0;
         private bool NeedsTimeUpdate()
         {
+            if (Time.time == lastUpdateTime)
+            {
+                return false;
+            }            
             if (RenderAlways)
             {
-
-                lastTransformPosition = transform.position;
                 foreach (List<SkinnedMeshUpdateFrame> list in frameSet.Values)
                 {
                     if (list.Count < FrameHistoryCount)
@@ -120,53 +202,105 @@ namespace AdditionalAccessoryControls
                 return false;
         }
 
+        private bool AllUpdatesIn()
+        {
+            if (RenderAlways && OCIChar != null)
+                return IKUpdated && FKUpdated && CHAControlUpdated;
+            else
+                return CHAControlUpdated;
+        }
+
+        public void ExternalUpdate(bool IKUpdate, bool FKUpdate, bool ChaControlLateUpdate)
+        {
+            if (IKUpdate)
+            {
+                IKUpdated = true;
+                if (IKControlled && AllUpdatesIn())
+                {
+                    DoUpdate();
+                }
+            }
+            else if (FKUpdate)
+            {
+                FKUpdated = true;
+                if (FKControlled && AllUpdatesIn())
+                {
+                    DoUpdate();
+                }
+            }
+            else if (ChaControlLateUpdate)
+            {
+                CHAControlUpdated = true;
+                if (AllUpdatesIn())
+                {
+                    DoUpdate();
+                }
+            }
+        }
+
         private void LateUpdate()
         {
-            bool updated = false;
-            if (BlendShapesDirty() || NeedsTimeUpdate())
+        }
+
+        private void DoUpdate()
+        {
+            try
             {
-                skinnedMeshRenderer.BakeMesh(bakedMesh);
+                if (!gameObject.activeInHierarchy)
+                {
+                    return;
+                }
 
-                bakedMesh.GetVertices(vertexList);
-                //             bakedMesh.GetNormals(normalList);
+                bool updated = false;
+                if (BlendShapesDirty() || NeedsTimeUpdate())
+                {
+                    skinnedMeshRenderer.BakeMesh(bakedMesh);
 
-                updated = true;                
-            }
+                    bakedMesh.GetVertices(vertexList);
+                    //             bakedMesh.GetNormals(normalList);
 
-            foreach (int vertexId in SkinnedMeshRendererListeners.Keys)
+                    updated = true;
+                    lastUpdateTime = Time.time;
+                }
+
+                foreach (int vertexId in SkinnedMeshRendererListeners.Keys)
+                {
+                    List<SkinnedMeshUpdateFrame> frameList = frameSet[vertexId];
+                    Vector3 verticeLocation = vertexList[vertexId];
+                    //             Vector3 normalDirection = normalList[vertexId];
+
+                    SkinnedMeshRenderedVertex vertex;
+                    if (!RenderAlways)
+                    {
+                        vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), Vector3.zero, verticeLocation, Vector3.zero);
+                    }
+                    else if (updated)
+                    {
+                        frameList.Add(new SkinnedMeshUpdateFrame(verticeLocation, Time.time, Vector3.zero));
+                        if (frameList.Count > 1)
+                            frameList[frameList.Count - 2] = new SkinnedMeshUpdateFrame(frameList[frameList.Count - 2].position, frameList[frameList.Count - 2].time, (frameList[frameList.Count - 1].position - frameList[frameList.Count - 2].position) / (frameList[frameList.Count - 1].time - frameList[frameList.Count - 2].time));
+                        while (frameList.Count > FrameHistoryCount)
+                            frameList.RemoveAt(0);
+
+                        vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), Vector3.zero, verticeLocation, Vector3.zero);
+                        //                SkinnedMeshRenderedVertex vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), transform.TransformDirection(normalDirection), verticeLocation, normalDirection);
+                    }
+                    else
+                    {
+                        // Extrapolation time
+                        Vector3 extrapolatedMovement = AverageDelta(frameList);
+                        Vector3 predictedPosition = frameList[frameList.Count - 1].position + (extrapolatedMovement * (Time.time - frameList[frameList.Count - 1].time));
+                        vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(predictedPosition), Vector3.zero, predictedPosition, Vector3.zero);
+                    }
+
+                    foreach (Action<SkinnedMeshRenderedVertex> listener in SkinnedMeshRendererListeners[vertexId])
+                    {
+                        listener.Invoke(vertex);
+                    }
+                }
+            } catch (Exception e)
             {
-                List<SkinnedMeshUpdateFrame> frameList = frameSet[vertexId];
-                Vector3 verticeLocation = vertexList[vertexId];
-                //             Vector3 normalDirection = normalList[vertexId];
-
-                SkinnedMeshRenderedVertex vertex;
-                if (!RenderAlways)
-                {
-                    vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), Vector3.zero, verticeLocation, Vector3.zero);
-                }
-                else if (updated)
-                {                    
-                    frameList.Add(new SkinnedMeshUpdateFrame(verticeLocation, Time.time, Vector3.zero));
-                    if (frameList.Count > 1)
-                        frameList[frameList.Count - 2] = new SkinnedMeshUpdateFrame(frameList[frameList.Count - 2].position, frameList[frameList.Count-2].time ,(frameList[frameList.Count - 1].position - frameList[frameList.Count - 2].position) / (frameList[frameList.Count - 1].time - frameList[frameList.Count - 2].time));
-                    while (frameList.Count > FrameHistoryCount)
-                        frameList.RemoveAt(0);
-
-                    vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), Vector3.zero, verticeLocation, Vector3.zero);
-                     //                SkinnedMeshRenderedVertex vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(verticeLocation), transform.TransformDirection(normalDirection), verticeLocation, normalDirection);
-                }
-                else
-                {
-                    // Extrapolation time
-                    Vector3 extrapolatedMovement = AverageDelta(frameList);
-                    Vector3 predictedPosition = frameList[frameList.Count - 1].position + (extrapolatedMovement * (Time.time - frameList[frameList.Count - 1].time)) ;
-                    vertex = new SkinnedMeshRenderedVertex(transform.TransformPoint(predictedPosition), Vector3.zero, predictedPosition, Vector3.zero);
-                }
-
-                foreach (Action<SkinnedMeshRenderedVertex> listener in SkinnedMeshRendererListeners[vertexId])
-                {
-                    listener.Invoke(vertex);
-                }
+                Log.LogWarning($"Error in accessory computation: {e.Message}\n{e.StackTrace}");
             }
         }
 

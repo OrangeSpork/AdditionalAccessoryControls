@@ -1,6 +1,7 @@
 ﻿using AIChara;
 using BepInEx.Logging;
 using HarmonyLib;
+using Studio;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,10 +33,13 @@ namespace AdditionalAccessoryControls
 
         public MonoBehaviour DynamicBone { get; set; }
 
+
+
         private bool dynamicBonesInstantiated = true;
         private Transform parentTransform;
         private int[] vertices;
         private AdditionalAccessoryAdvancedParentSkinnedMeshHelper meshHelper;
+        private AdditionalAccessoryAdvancedParentSkinnedMeshHelper altMeshHelper;
 
         private ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
@@ -53,6 +57,12 @@ namespace AdditionalAccessoryControls
                 meshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
                 vertices = null;
                 meshHelper = null;
+            }
+
+            if (altMeshHelper != null)
+            {
+                altMeshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+                altMeshHelper = null;
             }
 
             if (LinkParent != null && LinkParent.Length > 0)
@@ -76,10 +86,19 @@ namespace AdditionalAccessoryControls
                             }
 
                             meshHelper = parentTransform.gameObject.GetOrAddComponent<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
+                            meshHelper.ChaControl = ChaControl;
                             if (AnimatedBoneNames.Contains(parentTransform.gameObject.name))
                                 meshHelper.RenderAlways = true;
 
                             meshHelper.RegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+
+                            if (parentTransform.name == "o_tang")
+                            {
+                                altMeshHelper = ChaControl.transform.Find("BodyTop/p_cf_body_00/n_o_root/n_body_base/N_mnpbset/N_tang/o_tang").gameObject.GetOrAddComponent<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
+                                altMeshHelper.ChaControl = ChaControl;
+                                altMeshHelper.RenderAlways = true;
+                                altMeshHelper.RegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+                            }
 
 #if DEBUG
                             Log.LogInfo($"Attaching to SM at {parentTransform} Vertices {vertices}");
@@ -92,6 +111,7 @@ namespace AdditionalAccessoryControls
                         LinkParent = null;
                         parentTransform = null;
                         meshHelper = null;
+                        altMeshHelper = null;
                     }
                 }
                 else
@@ -314,7 +334,7 @@ namespace AdditionalAccessoryControls
             gameObject.transform.localEulerAngles = Vector3.zero;
 
             gameObject.transform.position = vertex.position;
-     //       gameObject.transform.eulerAngles = vertex.eulerAngles;
+      //      gameObject.transform.eulerAngles = gameObject.transform.TransformDirection(gameObject.transform.parent.InverseTransformDirection(gameObject.transform.parent.eulerAngles));
         }
 
         private void LateUpdate()
@@ -350,6 +370,8 @@ namespace AdditionalAccessoryControls
 
             if (meshHelper != null)
                 meshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
+            if (altMeshHelper != null)
+                altMeshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
 
         }
 
