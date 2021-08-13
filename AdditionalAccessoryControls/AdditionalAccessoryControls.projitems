@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessorySlotData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlsController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryControlsPlugin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryStudioHooks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryUI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalAccessoryVisibilityRules.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AdditionalCoordinateUI.cs" />
