@@ -40,10 +40,15 @@ namespace AdditionalAccessoryControls
             if (__instance.GetType() != typeof(CmpAccessory))
                 return;
 
-            int slot = int.Parse(__instance.gameObject.name.Substring(7));            
-            if (slot >= 20 && __instance.isVisible)
+            if (__instance.gameObject.name.Length < 7 || !__instance.gameObject.name.StartsWith("ca_slot"))
+                return;
+
+            if (int.TryParse(__instance.gameObject.name.Substring(7), out int slot))
             {
-                enable = !enable;
+                if (slot >= 20 && __instance.isVisible)
+                {
+                    enable = !enable;
+                }
             }
         }
 

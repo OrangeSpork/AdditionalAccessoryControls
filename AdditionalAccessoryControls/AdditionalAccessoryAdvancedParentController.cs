@@ -218,7 +218,7 @@ namespace AdditionalAccessoryControls
                         dynamicBonesInstantiated = true;
                         AdditionalAccessoryControlDynamicBoneUpdateManager.RegisterDynamicBone(bone, OnDynamicBoneUpdate);
 #if DEBUG
-                        Log.LogInfo($"Dynamic Bone Link Established: {bone.gameObject.name}");
+                        Log.LogInfo($"Dynamic Bone Link Established: {bone.gameObject.name} {bone.gameObject.GetInstanceID()}");
 #endif
                         return true;
                     }
@@ -240,7 +240,7 @@ namespace AdditionalAccessoryControls
                         dynamicBonesInstantiated = true;
                         AdditionalAccessoryControlDynamicBoneUpdateManager.RegisterDynamicBone(bone, OnDynamicBoneV2Update);
 #if DEBUG
-                        Log.LogInfo($"Dynamic Bone Link Established: {bone.gameObject.name}");
+                        Log.LogInfo($"Dynamic Bone Link Established: {bone.gameObject.name} {bone.gameObject.GetInstanceID()}");
 #endif
                         return true;
                     }
@@ -334,9 +334,11 @@ namespace AdditionalAccessoryControls
             gameObject.transform.localEulerAngles = Vector3.zero;
 
             gameObject.transform.position = vertex.position;
-      //      gameObject.transform.eulerAngles = gameObject.transform.TransformDirection(gameObject.transform.parent.InverseTransformDirection(gameObject.transform.parent.eulerAngles));
+            //      gameObject.transform.eulerAngles = gameObject.transform.TransformDirection(gameObject.transform.parent.InverseTransformDirection(gameObject.transform.parent.eulerAngles));
+
         }
 
+        private bool eofCoroutineRunning = false;
         private void LateUpdate()
         { 
             if (LinkParent != null && parentTransform == null)
@@ -357,8 +359,33 @@ namespace AdditionalAccessoryControls
 
                     gameObject.transform.position = parentTransform.position;
                     gameObject.transform.eulerAngles = parentTransform.eulerAngles;
+
+#if DEBUG                    
+                    if (Time.frameCount % 60 == 0)
+                    {
+                        Log.LogInfo($"Updating {gameObject.name} {gameObject.GetInstanceID()} My Pos: {gameObject.transform.position} Par Pos: {parentTransform.position}");
+                        if (!eofCoroutineRunning)
+                        {
+                            StartCoroutine(EndOfFrame());
+                            eofCoroutineRunning = true;
+                        }
+                    }
+                    
+#endif
                 }
             }
+        }
+
+        private IEnumerator EndOfFrame()
+        {
+            yield return new WaitForEndOfFrame();
+
+#if DEBUG
+            if (Time.frameCount % 60 == 0)
+                Log.LogInfo($"EOF {gameObject.name} {gameObject.GetInstanceID()} My Pos: {gameObject.transform.position} Par Pos: {parentTransform.position}");
+
+            eofCoroutineRunning = false;
+#endif
         }
 
         private void OnDestroy()
