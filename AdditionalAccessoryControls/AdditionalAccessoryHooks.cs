@@ -28,7 +28,8 @@ namespace AdditionalAccessoryControls
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "LateUpdateForce")]
         static void ChaControlLateUpdateForcePostfix(ChaControl __instance)
         {
-            AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance, false, false, true);
+                AdditionalAccessoryAdvancedParentController.ExternalUpdate(__instance);
+                AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance, false, false, true);
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(CmpBase), "EnableDynamicBones")]

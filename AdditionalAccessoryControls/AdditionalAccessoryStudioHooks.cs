@@ -19,7 +19,12 @@ namespace AdditionalAccessoryControls
         [HarmonyPostfix, HarmonyPatch(typeof(FKCtrl), "LateUpdate")]
         static void FKLateUpdatePostfix(FKCtrl __instance)
         {
-            AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance.gameObject.GetComponent<ChaControl>(), false, true, false);
+            ChaControl chaControl = __instance.gameObject.GetComponent<ChaControl>();
+            if (chaControl != null)
+            {
+                AdditionalAccessoryAdvancedParentController.ExternalUpdate(chaControl);
+                AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(chaControl, false, true, false);
+            }
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(OCIChar), nameof(OCIChar.ShowAccessory))]

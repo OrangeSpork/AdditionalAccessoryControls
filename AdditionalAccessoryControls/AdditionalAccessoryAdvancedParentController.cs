@@ -43,6 +43,22 @@ namespace AdditionalAccessoryControls
 
         private ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
+        private static List<AdditionalAccessoryAdvancedParentController> Helpers = new List<AdditionalAccessoryAdvancedParentController>();
+
+        private void Awake()
+        {
+            Helpers.Add(this);
+        }
+
+        public static void ExternalUpdate(ChaControl chaControl)
+        {
+            foreach (AdditionalAccessoryAdvancedParentController helper in Helpers)
+            {
+                if (helper.ChaControl == chaControl)
+                    helper.OnLateFKUpdate();
+            }
+        }
+
         private void UpdateParent()
         {
             parentTransform = null;
@@ -317,6 +333,11 @@ namespace AdditionalAccessoryControls
             LateUpdate();
         }
 
+        public void OnLateFKUpdate()
+        {
+            LateUpdate();
+        }
+
         public void OnDynamicBoneV2Update(DynamicBone_Ver02 bone)
         {
 #if DEBUG
@@ -360,7 +381,7 @@ namespace AdditionalAccessoryControls
                     gameObject.transform.position = parentTransform.position;
                     gameObject.transform.eulerAngles = parentTransform.eulerAngles;
 
-#if DEBUG                    
+#if DEBUG
                     if (Time.frameCount % 60 == 0)
                     {
                         Log.LogInfo($"Updating {gameObject.name} {gameObject.GetInstanceID()} My Pos: {gameObject.transform.position} Par Pos: {parentTransform.position}");
@@ -390,6 +411,8 @@ namespace AdditionalAccessoryControls
 
         private void OnDestroy()
         {
+            Helpers.Remove(this);
+
             if (DynamicBone != null && DynamicBone.GetType() == typeof(DynamicBone))
                 AdditionalAccessoryControlDynamicBoneUpdateManager.UnRegisterDynamicBone((DynamicBone)DynamicBone, OnDynamicBoneUpdate);
             else if (DynamicBone != null && DynamicBone.GetType() == typeof(DynamicBone_Ver02))
