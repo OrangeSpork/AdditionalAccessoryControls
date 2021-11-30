@@ -746,7 +746,7 @@ namespace AdditionalAccessoryControls
         }
 
         // state vars
-        private List<ChaFileAccessory.PartsInfo> originalMACCPartsList;
+        private object originalAdditionalData;
         private ChaFileAccessory.PartsInfo[] originalPartsArray;
 
         // When saving a coordinate card, first remove the character accessories before saving
@@ -783,7 +783,7 @@ namespace AdditionalAccessoryControls
             chaFileCoordinate.accessory.parts = originalPartsArray;
             originalPartsArray = null;
 
-            if (originalMACCPartsList != null)
+            if (originalAdditionalData != null)
             {
 #if DEBUG
                 Log.LogInfo("Restoring Original MACC Parts");
@@ -794,14 +794,18 @@ namespace AdditionalAccessoryControls
                 {
                     if (entry.Key.Equals(ChaControl.chaFile))
                     {
+                        additionalDataLoadMethod.Invoke(entry.Value, new object[] { originalAdditionalData });
+
                         List<ChaFileAccessory.PartsInfo> partsList = (List<ChaFileAccessory.PartsInfo>)partsField.GetValue(entry.Value);
-                        partsList.Clear();
-                        partsList.AddRange(originalMACCPartsList);
+                        IList objectsList = (IList)objectsField.GetValue(entry.Value);
+#if DEBUG
+                        Log.LogInfo($"MACC Parts Size {partsList.Count} Objects: {objectsList?.Count}");
+#endif
                         break;
                     }
                 }
 
-                originalMACCPartsList = null;
+                originalAdditionalData = null;
             }
 
             MaterialEditorHelper.RestoreSnapshot(chaFileCoordinate);
@@ -826,6 +830,10 @@ namespace AdditionalAccessoryControls
         private static FieldInfo partsField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all), "parts");
         private static FieldInfo objectsField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all), "objects");        
         private static Type accessoryObjectType = AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetNestedType("AccessoryObject", AccessTools.all);
+        private static Type additionalDataType = AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all);
+        private static ConstructorInfo additionalDataConstructor = additionalDataType.GetConstructor(new Type[] { });
+        private static MethodInfo additionalDataClearMethod = AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetMethod("Clear", AccessTools.all);
+        private static MethodInfo additionalDataLoadMethod = AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetMethod("LoadFrom", AccessTools.all);
         private static FieldInfo cmpAccessoryField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetNestedType("AccessoryObject", AccessTools.all), "cmp");
         private static FieldInfo listInfoBaseField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetNestedType("AccessoryObject", AccessTools.all), "info");
         private static FieldInfo showField = AccessTools.Field(AdditionalAccessoryControlsPlugin.MoreAccessoriesType.GetNestedType("AdditionalData", AccessTools.all).GetNestedType("AccessoryObject", AccessTools.all), "show");
@@ -941,7 +949,7 @@ namespace AdditionalAccessoryControls
 
 #if DEBUG
                     Log.LogInfo($"Trimmed Parts List Before: {beforeTrimSize} After: {partsList.Count} Obj List: {objectList.Count}");
-#endif               
+#endif
                 }
             }
 
@@ -962,15 +970,19 @@ namespace AdditionalAccessoryControls
                 if (entry.Key.Equals(ChaControl.chaFile))
                 {
                     List<ChaFileAccessory.PartsInfo> partsList = (List<ChaFileAccessory.PartsInfo>)partsField.GetValue(entry.Value);
-                    if (originalMACCPartsList == null)
+                    if (originalAdditionalData == null)
                     {
+                        originalAdditionalData = additionalDataConstructor.Invoke(new object[] { });
+                        additionalDataLoadMethod.Invoke(originalAdditionalData, new object[] { entry.Value });
+                        List<ChaFileAccessory.PartsInfo> newPartsList = (List<ChaFileAccessory.PartsInfo>)partsField.GetValue(originalAdditionalData);
+                        IList newObjectsList = (IList)objectsField.GetValue(originalAdditionalData);
 #if DEBUG
-                        Log.LogInfo($"Original Parts List: {partsList.Count}");
+                        Log.LogInfo($"New Parts List: {newPartsList.Count} New Objects List: {newObjectsList.Count}");
 #endif
-                        originalMACCPartsList = CopyPartsList(partsList);
                     }
                     partsList[slot].type = 350;
                     break;
+                                        
                 }
             }
 
@@ -1195,6 +1207,7 @@ namespace AdditionalAccessoryControls
                     HandleVisibilityRulesForSlot(slot, startup, hstart, hend, clothes, accessory);
                 }
 
+                HandleHairAccVisibilityRules();
                 HandleAccessorialSlotLinks();
                 HandleHairVisibilityRules();
                 HandleBodyVisibilityRules();
@@ -1299,6 +1312,11 @@ namespace AdditionalAccessoryControls
                         }
                     }
                 }
+
+                if (ruleUpdate && slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC))
+                {
+                    HandleHairAccVisibilityRules();
+                }
             }
 
             if (ruleUpdate)
@@ -1373,7 +1391,7 @@ namespace AdditionalAccessoryControls
                     int linkSlotNumber = int.Parse(rule.Modifier) - 1;
 #if DEBUG
                     Log.LogInfo($"Handling Inverse Link for Slot: {IsAccessoryShowing(slot.SlotNumber)} linked to Slot: {IsAccessoryShowing(linkSlotNumber)}");
-#endif                 
+#endif
                     if (CheckAccessorialStateMatch(slot, slotData[linkSlotNumber]))
                     {
                         ChaControl.SetAccessoryState(slot.SlotNumber, !IsAccessoryShowing(linkSlotNumber));
@@ -1475,6 +1493,74 @@ namespace AdditionalAccessoryControls
                 }
             }
             return false;
+        }
+
+        public bool IsHairAccHideRuleActive()
+        {
+            foreach (AdditionalAccessorySlotData slot in slotData)
+            {
+                if (!IsAccessoryShowing(slot.SlotNumber))
+                    continue;
+                if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC))
+                    return true;
+            }
+            return false;
+        }
+
+        public void HandleHairAccVisibilityRules()
+        {
+            foreach (AdditionalAccessorySlotData slot in slotData)
+            {
+                try
+                {
+                    CmpAccessory cmpAccessory;
+                    if (slot.SlotNumber < 20)
+                    {
+                        cmpAccessory = ChaControl.cmpAccessory[slot.SlotNumber];
+                    }
+                    else
+                    {
+                        cmpAccessory = GetMoreAccessorialCmpAccessory(slot.SlotNumber - 20);
+                    }
+                    if (cmpAccessory != null && cmpAccessory.typeHair)
+                    {
+                        if (IsHairAccHideRuleActive())
+                        {
+#if DEBUG
+                        Log.LogInfo($"Hiding Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to hair acc rules");
+#endif
+                            try { ChaControl.SetAccessoryState(slot.SlotNumber, false); }
+                            catch (Exception e)
+                            {
+#if DEBUG
+                            Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}");
+#endif
+                            }
+                        }
+                        else
+                        {
+
+#if DEBUG
+                        Log.LogInfo($"Showing Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to hair acc rules");
+#endif
+                            try { ChaControl.SetAccessoryState(slot.SlotNumber, true); }
+                            catch (Exception e)
+                            {
+#if DEBUG
+                            Log.LogWarning($"Error in Set Accessory State for slot {slot.SlotNumber} Message: {e.Message}\n\n{e.StackTrace}");
+#endif
+                            }
+                        }
+
+                    }
+                } 
+                catch (Exception e)
+                {
+#if DEBUG
+                    Log.LogWarning($"Error in Looking up Hair Accessory CMP Status: {e.Message}\n{e.StackTrace}");
+#endif
+                }
+            }
         }
 
         public void HandleHairVisibilityRules()

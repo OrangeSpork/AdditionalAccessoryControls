@@ -363,6 +363,7 @@ namespace AdditionalAccessoryControls
                     HIDE_FRONT_HAIR = GUILayout.Toggle(HIDE_FRONT_HAIR, "Hair Front");
                     HIDE_SIDE_HAIR = GUILayout.Toggle(HIDE_SIDE_HAIR, "Hair Side");
                     HIDE_EXT_HAIR = GUILayout.Toggle(HIDE_EXT_HAIR, "Hair Extension");
+                    HIDE_ACC_HAIR = GUILayout.Toggle(HIDE_ACC_HAIR, "Hair Accessories");
 
                     GUILayout.EndHorizontal();
 
@@ -856,6 +857,19 @@ namespace AdditionalAccessoryControls
                 if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_EXT))
                 {
                     CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_EXT, value);
+                    SendRulesUpdateNotification();
+                }
+            }
+        }
+
+        public bool HIDE_ACC_HAIR
+        {
+            get => CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC);
+            set
+            {
+                if (value != CurrentSlot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC))
+                {
+                    CurrentSlot.SetVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC, value);
                     SendRulesUpdateNotification();
                 }
             }

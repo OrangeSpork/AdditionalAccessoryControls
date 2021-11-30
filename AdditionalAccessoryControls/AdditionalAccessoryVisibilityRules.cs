@@ -57,6 +57,7 @@ namespace AdditionalAccessoryControls
         HAIR_BACK = 31,
         HAIR_SIDE = 32,
         HAIR_EXT =33,
+        HAIR_ACC=34,
 
         LEFT = 40,
         RIGHT = 41,
