@@ -6,7 +6,7 @@ Plugin to add some much needed quality of life improvements to accessory handlin
 
 # Character Accessories
 
-Marks an accessoy as being a character accessory (attached to the character) instead of a coordinate (outfit) accessory. This results in the following behaviour changes:
+Marks an accessory as being a character accessory (attached to the character) instead of a coordinate (outfit) accessory. This results in the following behaviour changes:
 
 1: Character accessories are not saved to coordinate cards.\
 2: When a coordinate card is loaded, character accessories currently worn are merged with the coordinate card accessories. Note, this results in slot movement as the character accessories are slotted into available empty slots. If no empty slots are available, new More Accessory slots are created and used.
