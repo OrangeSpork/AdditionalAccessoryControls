@@ -529,6 +529,40 @@ namespace AdditionalAccessoryControls
             loading = false;
         }
 
+        public void ResetAdditionalAccessoryData()
+        {
+            Log.LogInfo($"Resetting Additional Accessorial Data - Purging Existing and Rebuilding from Equipped Accessorials");
+            coordinateSlotData = null;
+            slotData = buildFromAccessories(AccessoriesApi.GetAccessoryObjects(ChaControl));
+            CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
+            if (KKAPI.Maker.MakerAPI.InsideAndLoaded)
+            {
+                foreach (AdditionalAccessorySlotData slot in slotData)
+                {
+                    try
+                    {
+                        AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper.SetValue(slot.SlotNumber, slot.CharacterAccessory);
+                        AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper.SetValue(slot.SlotNumber, slot.AutoMatchBackHairColor);
+                    }
+                    catch
+                    {
+                        Log.LogWarning($"Tried to init UI value for slot: {slot.SlotNumber} but there was no control present.");
+                    }
+                }
+            }
+            if (!KKAPI.Studio.StudioAPI.InsideStudio)
+            {
+#if DEBUG
+                    Log.LogInfo("Initial Load - All Accessories ON");
+#endif
+                ChaControl.SetAccessoryStateAll(true);
+            }
+
+            // Handle Advanced Parents
+            StartCoroutine(StartRefreshAdvancedParents());
+
+        }
+
         // Load Handler
         protected override void OnReload(GameMode currentGameMode, bool maintainState)
         {

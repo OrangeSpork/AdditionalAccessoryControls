@@ -28,7 +28,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.2.1";
+        public const string Version = "1.2.2";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 
@@ -40,6 +40,7 @@ namespace AdditionalAccessoryControls
         public static ConfigEntry<int> UpdateBodyPositionEveryNFrames { get; set; }
         public static ConfigEntry<int> BodyPositionHistoryFrames { get; set; }
         public static ConfigEntry<float> BodyPositionFastActionThreshold { get; set; }
+        public static ConfigEntry<KeyboardShortcut> ResetAdditionalAccessoryData { get; set; }
 
         // UX References
         public AccessoryControlWrapper<MakerToggle, bool> CharacterAccessoryControlWrapper { get; set; }
@@ -69,7 +70,7 @@ namespace AdditionalAccessoryControls
             UpdateBodyPositionEveryNFrames = Config.Bind("Options", "Update Body Mesh Parented Accessories Every N Frames", 3, new ConfigDescription("1 Updates Every Frame, 2 Every other, etc", new AcceptableValueRange<int>(1, 10)));
             BodyPositionHistoryFrames = Config.Bind("Advanced", "History Key Frames for Body Mesh Parents", 3, new ConfigDescription("Number of back frames to extrapolate from", new AcceptableValueRange<int>(3, 5), new ConfigurationManagerAttributes { IsAdvanced = true }));
             BodyPositionFastActionThreshold = Config.Bind("Advanced", "Body Mesh Parent Fast Action Threshold", .25f, new ConfigDescription("Threshold of Fast Movement Forcing Mesh Update", new AcceptableValueRange<float>(0.05f, 25.0f), new ConfigurationManagerAttributes { IsAdvanced = true }));
-
+            ResetAdditionalAccessoryData = Config.Bind("Advanced", "Reset Additional Accessory Data", KeyboardShortcut.Empty, new ConfigDescription("Clears and resets the slot data, used to recover desync'd accessory info. Only applicable in Maker."));
 #if DEBUG
             Log.LogInfo("Additional Accessories Plugin Loaded");
 #endif
@@ -337,6 +338,13 @@ namespace AdditionalAccessoryControls
             }
         }
 
+        private void Update()
+        {
+            if (ResetAdditionalAccessoryData.Value.IsDown() && KKAPI.Maker.MakerAPI.InsideAndLoaded)
+            {
+                KKAPI.Maker.MakerAPI.GetCharacterControl().GetComponent<AdditionalAccessoryControlsController>().ResetAdditionalAccessoryData();
+            }
+        }
         private void LateUpdate()
         {
             AdditionalAccessoryControlDynamicBoneUpdateManager.ReapInactiveDynamicBones();
