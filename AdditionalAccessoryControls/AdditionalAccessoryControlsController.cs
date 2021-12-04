@@ -532,6 +532,7 @@ namespace AdditionalAccessoryControls
         public void ResetAdditionalAccessoryData()
         {
             Log.LogInfo($"Resetting Additional Accessorial Data - Purging Existing and Rebuilding from Equipped Accessorials");
+            Log.LogMessage("Resetting Additional Accessorial Data - Purging Existing and Rebuilding from Equipped Accessorials");
             coordinateSlotData = null;
             slotData = buildFromAccessories(AccessoriesApi.GetAccessoryObjects(ChaControl));
             CoordinateOverrideData = new AdditionalAccessoryCoordinateData();
@@ -1224,7 +1225,7 @@ namespace AdditionalAccessoryControls
         }
 
         private bool runningVisibilityRules = false;
-        public void HandleVisibilityRules(bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false)
+        public void HandleVisibilityRules(bool startup = false, bool hstart = false, bool hend = false, bool clothes = false, bool accessory = false, int sourceSlot = -1)
         {            
             try
             {
@@ -1241,7 +1242,7 @@ namespace AdditionalAccessoryControls
                     HandleVisibilityRulesForSlot(slot, startup, hstart, hend, clothes, accessory);
                 }
 
-                HandleHairAccVisibilityRules();
+                HandleHairAccVisibilityRules(false, startup, accessory, hstart, hend, sourceSlot);
                 HandleAccessorialSlotLinks();
                 HandleHairVisibilityRules();
                 HandleBodyVisibilityRules();
@@ -1349,7 +1350,7 @@ namespace AdditionalAccessoryControls
 
                 if (ruleUpdate && slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC))
                 {
-                    HandleHairAccVisibilityRules();
+                    HandleHairAccVisibilityRules(ruleUpdate, startup, accessory, hstart, hend, slot.SlotNumber);
                 }
             }
 
@@ -1529,6 +1530,16 @@ namespace AdditionalAccessoryControls
             return false;
         }
 
+        public bool IsHairAccHideRulePresent()
+        {
+            foreach (AdditionalAccessorySlotData slot in slotData)
+            {
+                if (slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.HAIR, AdditionalAccessoryVisibilityRulesModifiers.HAIR_ACC))
+                    return true;
+            }
+            return false;
+        }
+
         public bool IsHairAccHideRuleActive()
         {
             foreach (AdditionalAccessorySlotData slot in slotData)
@@ -1541,12 +1552,35 @@ namespace AdditionalAccessoryControls
             return false;
         }
 
-        public void HandleHairAccVisibilityRules()
+        public void HandleHairAccVisibilityRules(bool ruleUpdate, bool startup, bool accessory, bool hstart, bool hend, int sourceSlot)
         {
+            if (!IsHairAccHideRulePresent())
+                return;
+
             foreach (AdditionalAccessorySlotData slot in slotData)
-            {
+            {                
                 try
                 {
+                    // don't update myself
+                    if (sourceSlot == slot.SlotNumber)
+                        continue;
+
+                    // Check to see if accessory is hidden for other reasons
+                    if ((startup && HasStartupVisibilityRule(slot) && !accessory)
+                    || (hstart && slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.H_START, AdditionalAccessoryVisibilityRulesModifiers.HIDE))
+                    || (hend && slot.ContainsVisibilityRule(AdditionalAccessoryVisibilityRules.H_END, AdditionalAccessoryVisibilityRulesModifiers.HIDE)))
+                    {
+                        continue;
+                    }
+ 
+                    if (HasClothesVisibilityRule(slot) || (ruleUpdate && !HasStartupVisibilityRule(slot)))
+                    {
+                        if (VisibilityClothesCheckResult(slot) && !IsAccessoryShowing(slot.SlotNumber))
+                        {
+                            continue;
+                        }
+                    }
+
                     CmpAccessory cmpAccessory;
                     if (slot.SlotNumber < 20)
                     {
@@ -1561,7 +1595,7 @@ namespace AdditionalAccessoryControls
                         if (IsHairAccHideRuleActive())
                         {
 #if DEBUG
-                        Log.LogInfo($"Hiding Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to hair acc rules");
+                            Log.LogInfo($"Hiding Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to hair acc rules");
 #endif
                             try { ChaControl.SetAccessoryState(slot.SlotNumber, false); }
                             catch (Exception e)
@@ -1575,7 +1609,7 @@ namespace AdditionalAccessoryControls
                         {
 
 #if DEBUG
-                        Log.LogInfo($"Showing Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to hair acc rules");
+                            Log.LogInfo($"Showing Accessorial: {slot.SlotNumber} {slot.AccessoryName} due to hair acc rules");
 #endif
                             try { ChaControl.SetAccessoryState(slot.SlotNumber, true); }
                             catch (Exception e)

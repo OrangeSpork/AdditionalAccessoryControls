@@ -108,12 +108,12 @@ namespace AdditionalAccessoryControls
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetAccessoryState))]
-        public static void ShowAccessory(ChaControl __instance)
+        public static void ShowAccessory(ChaControl __instance, int slotNo)
         {
             try
             {
                 AdditionalAccessoryControlsController aacController = __instance.gameObject.GetComponent<AdditionalAccessoryControlsController>();
-                aacController.HandleVisibilityRules(accessory: true);
+                aacController.HandleVisibilityRules(accessory: true, sourceSlot: slotNo);
             }
             catch (Exception e)
             {

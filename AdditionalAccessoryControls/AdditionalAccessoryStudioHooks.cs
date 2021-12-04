@@ -28,12 +28,12 @@ namespace AdditionalAccessoryControls
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(OCIChar), nameof(OCIChar.ShowAccessory))]
-        public static void ShowOCIAccessory(OCIChar __instance)
+        public static void ShowOCIAccessory(OCIChar __instance, int _id)
         {
             try
             {
                 AdditionalAccessoryControlsController aacController = __instance.charInfo.gameObject.GetComponent<AdditionalAccessoryControlsController>();
-                aacController.HandleVisibilityRules(accessory: true);
+                aacController.HandleVisibilityRules(accessory: true, sourceSlot: _id);
             }
             catch (Exception e)
             {
