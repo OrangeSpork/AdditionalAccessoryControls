@@ -67,3 +67,9 @@ Body Mesh Attachment: The special body search button allows attaching accessorie
 - Update Body Mesh Parented Accessories Every N Frames: Controls how many frames are real mesh synchronizations vs. interpolations. A value of 1 updates every frame (best results, worst performance). 2 updates every other frame, 3 every 3 frames and so on. 
 - History Key Frames for Body Mesh Parents (Advanced Option): How many frames of back history is used to build interpolation. 3 is more responsive, 5 is smoother.
 - Body Mesh Parent Fast Action Threshold (Advanced Option): How fast moving things must be to force real calculation instead of interpolation.
+
+# Additional Functions
+
+Rebuild More Accessory Data: Hotkey only function, it is not defined by default - you will need to set the key in the Plugin Settings menu. Only functions in Maker, this will purge all Additional Accessory Data for the card and rebuild the plugin data from the equipped accessories. Use this to fix a bugged card either from old versions of the plugin that had some more accessory sync issues or from cards exported from Studio which often end up slightly messed up as a result.
+
+Note: You can tell the accessory data has de-synced if the more accessory visibility rule UI refuses to come up for a slot with an item in it or shows a different item in the slot than the main UI. At that point purging the plugin data and resetting rules is the only way to recover.
