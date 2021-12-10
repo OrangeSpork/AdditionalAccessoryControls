@@ -361,7 +361,10 @@ namespace AdditionalAccessoryControls
 
         private bool eofCoroutineRunning = false;
         private void LateUpdate()
-        { 
+        {
+            if (!this.enabled || this.gameObject == null)
+                return;
+
             if (LinkParent != null && parentTransform == null)
             {
                 UpdateParent();
