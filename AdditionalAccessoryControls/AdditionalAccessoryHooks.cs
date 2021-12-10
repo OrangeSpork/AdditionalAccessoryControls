@@ -207,6 +207,9 @@ namespace AdditionalAccessoryControls
             try
             { 
                 ChaControl owner = null;
+                if (Character.Instance == null || Character.Instance.dictEntryChara == null)
+                    return;
+
                 foreach (KeyValuePair<int, ChaControl> pair in Character.Instance.dictEntryChara)
                 {
                     if (pair.Value.nowCoordinate == __instance || pair.Value.chaFile.coordinate == __instance)
