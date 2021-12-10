@@ -351,6 +351,9 @@ namespace AdditionalAccessoryControls
 
         public void OnSkinnedMeshUpdate(SkinnedMeshRenderedVertex vertex)
         {
+            if (!this.enabled || this.gameObject == null)
+                return;
+
             gameObject.transform.localPosition = Vector3.zero;
             gameObject.transform.localEulerAngles = Vector3.zero;
 
