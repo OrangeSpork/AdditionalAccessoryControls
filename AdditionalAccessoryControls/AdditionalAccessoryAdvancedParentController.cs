@@ -351,41 +351,51 @@ namespace AdditionalAccessoryControls
 
         public void OnSkinnedMeshUpdate(SkinnedMeshRenderedVertex vertex)
         {
-            if (!this.enabled || this.gameObject == null)
-                return;
+            try
+            {
+                if (!this.enabled || this.gameObject == null)
+                    return;
 
-            gameObject.transform.localPosition = Vector3.zero;
-            gameObject.transform.localEulerAngles = Vector3.zero;
+                gameObject.transform.localPosition = Vector3.zero;
+                gameObject.transform.localEulerAngles = Vector3.zero;
 
-            gameObject.transform.position = vertex.position;
-            //      gameObject.transform.eulerAngles = gameObject.transform.TransformDirection(gameObject.transform.parent.InverseTransformDirection(gameObject.transform.parent.eulerAngles));
-
+                gameObject.transform.position = vertex.position;
+                //      gameObject.transform.eulerAngles = gameObject.transform.TransformDirection(gameObject.transform.parent.InverseTransformDirection(gameObject.transform.parent.eulerAngles));
+            }
+            catch (Exception skinnedMeshUpdateErr)
+            {
+#if DEBUG
+                Log.LogError($"Error in Adv Parent Late Update: {skinnedMeshUpdateErr.Message}\n{skinnedMeshUpdateErr.StackTrace});
+#endif
+            }
         }
 
         private bool eofCoroutineRunning = false;
         private void LateUpdate()
         {
-            if (!this.enabled || this.gameObject == null)
-                return;
-
-            if (LinkParent != null && parentTransform == null)
+            try
             {
-                UpdateParent();
-            }
-            if (DynamicBone == null && !dynamicBonesInstantiated)
-            {
-                ScanForDynamicBone();
-            }
+                if (!this.enabled || this.gameObject == null)
+                    return;
 
-            if (parentTransform != null)
-            {
-                if (meshHelper == null)
-                { 
-                    gameObject.transform.localPosition = Vector3.zero;
-                    gameObject.transform.localEulerAngles = Vector3.zero;
+                if (LinkParent != null && parentTransform == null)
+                {
+                    UpdateParent();
+                }
+                if (DynamicBone == null && !dynamicBonesInstantiated)
+                {
+                    ScanForDynamicBone();
+                }
 
-                    gameObject.transform.position = parentTransform.position;
-                    gameObject.transform.eulerAngles = parentTransform.eulerAngles;
+                if (parentTransform != null)
+                {
+                    if (meshHelper == null)
+                    {
+                        gameObject.transform.localPosition = Vector3.zero;
+                        gameObject.transform.localEulerAngles = Vector3.zero;
+
+                        gameObject.transform.position = parentTransform.position;
+                        gameObject.transform.eulerAngles = parentTransform.eulerAngles;
 
 #if DEBUG
                     if (Time.frameCount % 60 == 0)
@@ -399,7 +409,14 @@ namespace AdditionalAccessoryControls
                     }
                     
 #endif
+                    }
                 }
+            }
+            catch (Exception lateUpdateErr)
+            {
+#if DEBUG
+                Log.LogError($"Error in Adv Parent Late Update: {lateUpdateErr.Message}\n{lateUpdateErr.StackTrace});
+#endif
             }
         }
 
