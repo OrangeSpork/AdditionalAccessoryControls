@@ -4,6 +4,7 @@ using AIProject;
 #endif
 using CharaCustom;
 using HarmonyLib;
+using KKABMX.Core;
 using Manager;
 using RootMotion.FinalIK;
 using System;
@@ -29,7 +30,14 @@ namespace AdditionalAccessoryControls
         static void ChaControlLateUpdateForcePostfix(ChaControl __instance)
         {
                 AdditionalAccessoryAdvancedParentController.ExternalUpdate(__instance);
-                AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance, false, false, true);
+                AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance, false, false, true, false);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(BoneController), "LateUpdate")]
+        static void BoneControllerLateUpdatePostfix(BoneController __instance)
+        {
+            AdditionalAccessoryAdvancedParentController.ExternalUpdate(__instance.ChaControl);
+            AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(__instance.ChaControl, false, false, false, true);
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(CmpBase), "EnableDynamicBones")]

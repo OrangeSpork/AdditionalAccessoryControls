@@ -1,5 +1,6 @@
 ﻿using AIChara;
 using BepInEx.Logging;
+using HarmonyLib;
 using RootMotion.FinalIK;
 using Studio;
 using System;
@@ -27,8 +28,10 @@ namespace AdditionalAccessoryControls
         private bool FKUpdated = false;
         private bool IKUpdated = false;
         private bool CHAControlUpdated = false;
+        private bool BoneControllerUpdated = false;
         private bool FKControlled = false;
         private bool IKControlled = false;
+        private int IKUpdateCount = 0;
 
         private ManualLogSource Log => AdditionalAccessoryControlsPlugin.Instance.Log;
 
@@ -50,12 +53,12 @@ namespace AdditionalAccessoryControls
 
         private Delegate PostUpdateIKDelegate;
 
-        public static void ExternalUpdate(ChaControl chaControl, bool IKUpdate, bool FKUpdate, bool ChaControlUpdate)
+        public static void ExternalUpdate(ChaControl chaControl, bool IKUpdate, bool FKUpdate, bool ChaControlUpdate, bool BoneControllerUpdate)
         {
             foreach (AdditionalAccessoryAdvancedParentSkinnedMeshHelper helper in Helpers)
             {
                 if (helper.ChaControl == chaControl)
-                    helper.ExternalUpdate(IKUpdate, FKUpdate, ChaControlUpdate);
+                    helper.ExternalUpdate(IKUpdate, FKUpdate, ChaControlUpdate, BoneControllerUpdate);
             }
         }
 
@@ -91,7 +94,9 @@ namespace AdditionalAccessoryControls
 
             FKUpdated = false;
             IKUpdated = false;
+            IKUpdateCount = 0;
             CHAControlUpdated = false;
+            BoneControllerUpdated = false;
 
             if (RenderAlways && OCIChar != null)
             {
@@ -111,7 +116,7 @@ namespace AdditionalAccessoryControls
                     {
                         PostUpdateIKDelegate = new IKSolver.UpdateDelegate(() =>
                         {
-                            ExternalUpdate(true, false, false);
+                            ExternalUpdate(true, false, false, false);
                         });
                         OCIChar.finalIK.solver.OnPostUpdate = (IKSolver.UpdateDelegate)Delegate.Combine(OCIChar.finalIK.solver.OnPostUpdate, PostUpdateIKDelegate);
                     }
@@ -130,6 +135,11 @@ namespace AdditionalAccessoryControls
         {
             bool dirty = false;
             if (blendShapeWeights == null)
+            {
+                dirty = true;
+                blendShapeWeights = new float[skinnedMeshRenderer.sharedMesh.blendShapeCount];
+            }
+            else if (blendShapeWeights.Length != skinnedMeshRenderer.sharedMesh.blendShapeCount)
             {
                 dirty = true;
                 blendShapeWeights = new float[skinnedMeshRenderer.sharedMesh.blendShapeCount];
@@ -205,16 +215,30 @@ namespace AdditionalAccessoryControls
         private bool AllUpdatesIn()
         {
             if (RenderAlways && OCIChar != null)
-                return IKUpdated && FKUpdated && CHAControlUpdated;
+                return IKUpdated && FKUpdated && CHAControlUpdated && BoneControllerUpdated;
             else
-                return CHAControlUpdated;
+                return CHAControlUpdated && BoneControllerUpdated;
         }
 
-        public void ExternalUpdate(bool IKUpdate, bool FKUpdate, bool ChaControlLateUpdate)
+        private static Type AdvIKShoulderRotatorType = AccessTools.TypeByName("AdvIKPlugin.AdvIKShoulderRotator");
+        public void ExternalUpdate(bool IKUpdate, bool FKUpdate, bool ChaControlLateUpdate, bool BoneControllerLateUpdate)
         {
             if (IKUpdate)
-            {
-                IKUpdated = true;
+            {                
+                IKUpdateCount++;
+                if (AdvIKShoulderRotatorType != null && ChaControl.objAnim.GetComponent(AdvIKShoulderRotatorType) != null && IKUpdateCount > 1)
+                {
+                    IKUpdated = true;
+                }
+                else if (AdvIKShoulderRotatorType != null && ChaControl.objAnim.GetComponent(AdvIKShoulderRotatorType) == null && IKUpdateCount > 0)
+                {
+                    IKUpdated = true;
+                }
+                else if (AdvIKShoulderRotatorType == null && IKUpdateCount > 0)
+                {
+                    IKUpdated = true;
+                }
+
                 if (IKControlled && AllUpdatesIn())
                 {
                     DoUpdate();
@@ -231,6 +255,14 @@ namespace AdditionalAccessoryControls
             else if (ChaControlLateUpdate)
             {
                 CHAControlUpdated = true;
+                if (AllUpdatesIn())
+                {
+                    DoUpdate();
+                }
+            }
+            else if (BoneControllerLateUpdate)
+            {
+                BoneControllerUpdated = true;
                 if (AllUpdatesIn())
                 {
                     DoUpdate();

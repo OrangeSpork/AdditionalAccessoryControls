@@ -23,7 +23,7 @@ namespace AdditionalAccessoryControls
             if (chaControl != null)
             {
                 AdditionalAccessoryAdvancedParentController.ExternalUpdate(chaControl);
-                AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(chaControl, false, true, false);
+                AdditionalAccessoryAdvancedParentSkinnedMeshHelper.ExternalUpdate(chaControl, false, true, false, false);
             }
         }
 
