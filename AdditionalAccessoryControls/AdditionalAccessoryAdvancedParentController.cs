@@ -103,7 +103,7 @@ namespace AdditionalAccessoryControls
 
                             meshHelper = parentTransform.gameObject.GetOrAddComponent<AdditionalAccessoryAdvancedParentSkinnedMeshHelper>();
                             meshHelper.ChaControl = ChaControl;
-                            if (AnimatedBoneNames.Contains(parentTransform.gameObject.name))
+                            if (AnimatedBoneNames.Contains(parentTransform.gameObject.name) || ContainsCustomBones())
                                 meshHelper.RenderAlways = true;
 
                             meshHelper.RegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
@@ -365,7 +365,7 @@ namespace AdditionalAccessoryControls
             catch (Exception skinnedMeshUpdateErr)
             {
 #if DEBUG
-                Log.LogError($"Error in Adv Parent Late Update: {skinnedMeshUpdateErr.Message}\n{skinnedMeshUpdateErr.StackTrace});
+                Log.LogError($"Error in Adv Parent Late Update: {skinnedMeshUpdateErr.Message}\n{skinnedMeshUpdateErr.StackTrace}");
 #endif
             }
         }
@@ -398,16 +398,15 @@ namespace AdditionalAccessoryControls
                         gameObject.transform.eulerAngles = parentTransform.eulerAngles;
 
 #if DEBUG
-                    if (Time.frameCount % 60 == 0)
-                    {
-                        Log.LogInfo($"Updating {gameObject.name} {gameObject.GetInstanceID()} My Pos: {gameObject.transform.position} Par Pos: {parentTransform.position}");
-                        if (!eofCoroutineRunning)
+                        if (Time.frameCount % 60 == 0)
                         {
-                            StartCoroutine(EndOfFrame());
-                            eofCoroutineRunning = true;
+                            Log.LogInfo($"Updating {gameObject.name} {gameObject.GetInstanceID()} My Pos: {gameObject.transform.position} Par Pos: {parentTransform.position}");
+                            if (!eofCoroutineRunning)
+                            {
+                                StartCoroutine(EndOfFrame());
+                                eofCoroutineRunning = true;
+                            }
                         }
-                    }
-                    
 #endif
                     }
                 }
@@ -415,7 +414,7 @@ namespace AdditionalAccessoryControls
             catch (Exception lateUpdateErr)
             {
 #if DEBUG
-                Log.LogError($"Error in Adv Parent Late Update: {lateUpdateErr.Message}\n{lateUpdateErr.StackTrace});
+                Log.LogError($"Error in Adv Parent Late Update: {lateUpdateErr.Message}\n{lateUpdateErr.StackTrace}");
 #endif
             }
         }
@@ -446,6 +445,28 @@ namespace AdditionalAccessoryControls
             if (altMeshHelper != null)
                 altMeshHelper.UnRegisterVertexListener(vertices[0], OnSkinnedMeshUpdate);
 
+        }
+
+        private static Type BonesFrameworkEventTriggerType = AccessTools.TypeByName("BonesFramework.EventTrigger");
+        private static Type ModBoneImplantorBoneImplantProcessType = AccessTools.TypeByName("ModBoneImplantor.BoneImplantProcess");
+        private bool ContainsCustomBones()
+        {
+            if (BonesFrameworkEventTriggerType != null && ChaControl.objHead.GetComponent(BonesFrameworkEventTriggerType) != null)
+            {
+#if DEBUG
+                Log.LogInfo($"Detected Custom BonesFramework bones on {ChaControl.fileParam.fullname} head treating all meshes as potentially animated.");
+#endif
+                return true;
+            }
+            if (ModBoneImplantorBoneImplantProcessType != null && ChaControl.objHead.GetComponent(ModBoneImplantorBoneImplantProcessType) != null)
+            {
+#if DEBUG
+                Log.LogInfo($"Detected Custom ModBoneImplantor bones on {ChaControl.fileParam.fullname} head treating all meshes as potentially animated.");
+#endif
+                return true;
+            }
+
+            return false;
         }
 
         public static string[] AnimatedBoneNames = { "o_body_cm", "o_body_cf", "cm_o_dan00", "cm_o_dan_f" };

@@ -28,7 +28,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.2.4";
+        public const string Version = "1.2.5";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 
@@ -41,6 +41,7 @@ namespace AdditionalAccessoryControls
         public static ConfigEntry<int> BodyPositionHistoryFrames { get; set; }
         public static ConfigEntry<float> BodyPositionFastActionThreshold { get; set; }
         public static ConfigEntry<KeyboardShortcut> ResetAdditionalAccessoryData { get; set; }
+        public static ConfigEntry<bool> AllowForHeadBoneAnimation { get; set; }
 
         // UX References
         public AccessoryControlWrapper<MakerToggle, bool> CharacterAccessoryControlWrapper { get; set; }
@@ -68,6 +69,7 @@ namespace AdditionalAccessoryControls
             TrimExcessAccessorySlotsOnSave = Config.Bind("Options", "Trim More Accessory Slots", false, "Extra Accessory Slots Past Actual Accessories Removed on Save");
             MoreAccessoriesDynamicBonesFix = Config.Bind("Options", "Fix More Accessories Dynamic Bones", true, "Fix a Bug in More Accessories That Disables Dynamic Bones in More Accessory Slots");
             UpdateBodyPositionEveryNFrames = Config.Bind("Options", "Update Body Mesh Parented Accessories Every N Frames", 3, new ConfigDescription("1 Updates Every Frame, 2 Every other, etc", new AcceptableValueRange<int>(1, 10)));
+            AllowForHeadBoneAnimation = Config.Bind("Advanced", "Allow for Head Bone Animation", false, new ConfigDescription("Enable This to Allow Advanced Parented Accessories to Animate with Head Bones (Vanilla Game does not do this, only for custom bone work)"));
             BodyPositionHistoryFrames = Config.Bind("Advanced", "History Key Frames for Body Mesh Parents", 3, new ConfigDescription("Number of back frames to extrapolate from", new AcceptableValueRange<int>(3, 5), new ConfigurationManagerAttributes { IsAdvanced = true }));
             BodyPositionFastActionThreshold = Config.Bind("Advanced", "Body Mesh Parent Fast Action Threshold", .25f, new ConfigDescription("Threshold of Fast Movement Forcing Mesh Update", new AcceptableValueRange<float>(0.05f, 25.0f), new ConfigurationManagerAttributes { IsAdvanced = true }));
             ResetAdditionalAccessoryData = Config.Bind("Advanced", "Reset Additional Accessory Data", KeyboardShortcut.Empty, new ConfigDescription("Clears and resets the slot data, used to recover desync'd accessory info. Only applicable in Maker."));

@@ -162,7 +162,7 @@ namespace AdditionalAccessoryControls
         private bool ApproximatelyEquals(float one, float two)
         {
             return Math.Abs(one - two) < 0.0001;
-        }
+        }        
 
         private Vector3 AverageDelta(List<SkinnedMeshUpdateFrame> frames)
         {
@@ -190,7 +190,7 @@ namespace AdditionalAccessoryControls
             {
                 return false;
             }            
-            if (RenderAlways)
+            if (RenderAlways || AdditionalAccessoryControlsPlugin.AllowForHeadBoneAnimation.Value)
             {
                 foreach (List<SkinnedMeshUpdateFrame> list in frameSet.Values)
                 {
@@ -277,7 +277,7 @@ namespace AdditionalAccessoryControls
         private void DoUpdate()
         {
             try
-            {
+            {                
                 if (gameObject == null || !gameObject.activeInHierarchy)
                 {
                     return;
@@ -330,7 +330,8 @@ namespace AdditionalAccessoryControls
                         listener.Invoke(vertex);
                     }
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Log.LogWarning($"Error in accessory computation: {e.Message}\n{e.StackTrace}");
             }
