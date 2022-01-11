@@ -529,6 +529,29 @@ namespace AdditionalAccessoryControls
             loading = false;
         }
 
+        public void ClearAndResyncSlot(int slotNumber)
+        {
+            GameObject accessory = AccessoriesApi.GetAccessoryObject(ChaControl, slotNumber);
+            if (accessory == null)
+            {
+                slotData[slotNumber] = AdditionalAccessorySlotData.EmptySlot(slotNumber);
+            }
+            else
+            {
+                ListInfoComponent infoAccessory = accessory.GetComponent<ListInfoComponent>();
+                if (slotNumber < 20)
+                {
+                    slotData[slotNumber] = AdditionalAccessorySlotData.NonCharacterAccessorySlot(slotNumber, infoAccessory.data.Name, ChaControl.nowCoordinate.accessory.parts[slotNumber]);
+                }
+                else
+                {
+                    slotData[slotNumber] = AdditionalAccessorySlotData.NonCharacterAccessorySlot(slotNumber, infoAccessory.data.Name, GetMoreAccessorialPartInfo(slotNumber - 20));
+                }
+            }
+            AdditionalAccessoryControlsPlugin.Instance.CharacterAccessoryControlWrapper.SetValue(slotNumber, slotData[slotNumber].CharacterAccessory);
+            AdditionalAccessoryControlsPlugin.Instance.AutoMatchHairColorWrapper.SetValue(slotNumber, slotData[slotNumber].AutoMatchBackHairColor);
+        }
+
         public void ResetAdditionalAccessoryData()
         {
             Log.LogInfo($"Resetting Additional Accessorial Data - Purging Existing and Rebuilding from Equipped Accessorials");

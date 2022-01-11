@@ -42,6 +42,7 @@ namespace AdditionalAccessoryControls
         public static ConfigEntry<float> BodyPositionFastActionThreshold { get; set; }
         public static ConfigEntry<KeyboardShortcut> ResetAdditionalAccessoryData { get; set; }
         public static ConfigEntry<bool> AllowForHeadBoneAnimation { get; set; }
+        public static ConfigEntry<bool> ShowSlotSettingResyncButton { get; set; }
 
         // UX References
         public AccessoryControlWrapper<MakerToggle, bool> CharacterAccessoryControlWrapper { get; set; }
@@ -69,10 +70,11 @@ namespace AdditionalAccessoryControls
             TrimExcessAccessorySlotsOnSave = Config.Bind("Options", "Trim More Accessory Slots", false, "Extra Accessory Slots Past Actual Accessories Removed on Save");
             MoreAccessoriesDynamicBonesFix = Config.Bind("Options", "Fix More Accessories Dynamic Bones", true, "Fix a Bug in More Accessories That Disables Dynamic Bones in More Accessory Slots");
             UpdateBodyPositionEveryNFrames = Config.Bind("Options", "Update Body Mesh Parented Accessories Every N Frames", 3, new ConfigDescription("1 Updates Every Frame, 2 Every other, etc", new AcceptableValueRange<int>(1, 10)));
-            AllowForHeadBoneAnimation = Config.Bind("Advanced", "Allow for Head Bone Animation", false, new ConfigDescription("Enable This to Allow Advanced Parented Accessories to Animate with Head Bones (Vanilla Game does not do this, only for custom bone work)"));
+            AllowForHeadBoneAnimation = Config.Bind("Advanced", "Allow for Head Bone Animation", false, new ConfigDescription("Enable This to Allow Advanced Parented Accessories to Animate with Head Bones (Vanilla Game does not do this, only for custom bone work)", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
             BodyPositionHistoryFrames = Config.Bind("Advanced", "History Key Frames for Body Mesh Parents", 3, new ConfigDescription("Number of back frames to extrapolate from", new AcceptableValueRange<int>(3, 5), new ConfigurationManagerAttributes { IsAdvanced = true }));
             BodyPositionFastActionThreshold = Config.Bind("Advanced", "Body Mesh Parent Fast Action Threshold", .25f, new ConfigDescription("Threshold of Fast Movement Forcing Mesh Update", new AcceptableValueRange<float>(0.05f, 25.0f), new ConfigurationManagerAttributes { IsAdvanced = true }));
-            ResetAdditionalAccessoryData = Config.Bind("Advanced", "Reset Additional Accessory Data", KeyboardShortcut.Empty, new ConfigDescription("Clears and resets the slot data, used to recover desync'd accessory info. Only applicable in Maker."));
+            ResetAdditionalAccessoryData = Config.Bind("Advanced", "Reset Additional Accessory Data", KeyboardShortcut.Empty, new ConfigDescription("Clears and resets the slot data, used to recover desync'd accessory info. Only applicable in Maker.", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+            ShowSlotSettingResyncButton = Config.Bind("Advanced", "Show Slot Setting Resync Button", false, new ConfigDescription("Adds a button to the mod tab in maker to allow clearing and resyncing the slot data for the slot.", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 #if DEBUG
             Log.LogInfo("Additional Accessories Plugin Loaded");
 #endif
@@ -169,6 +171,11 @@ namespace AdditionalAccessoryControls
             MakerAPI.AddAccessoryWindowControl(advancedParentLabel);
             MakerAPI.AddAccessoryWindowControl(new MakerButton("Advanced Parent", null, this)).OnClick.AddListener(AdvancedParent);
 
+            if (ShowSlotSettingResyncButton.Value)
+            {
+                MakerAPI.AddAccessoryWindowControl(new MakerButton("Clear and Resync Slot", null, this)).OnClick.AddListener(ClearAndResyncSlot);
+            }
+
             CoordinateRulesToggle = MakerAPI.AddSidebarControl(new SidebarToggle("Coordinate Visibility Rules", false, this));
             CoordinateRulesToggle.ValueChanged.Subscribe(b =>
             {
@@ -176,6 +183,15 @@ namespace AdditionalAccessoryControls
             });
 
             MakerControlsRegistered = true;
+        }
+
+        private void ClearAndResyncSlot()
+        {
+            if (!MakerAPI.InsideAndLoaded)
+                return;
+
+            AdditionalAccessoryControlsController aacController = MakerAPI.GetCharacterControl().gameObject.GetComponent<AdditionalAccessoryControlsController>();
+            aacController.ClearAndResyncSlot(AccessoriesApi.SelectedMakerAccSlot);
         }
 
         private void CleanupMakerControls(object sender, EventArgs args)
