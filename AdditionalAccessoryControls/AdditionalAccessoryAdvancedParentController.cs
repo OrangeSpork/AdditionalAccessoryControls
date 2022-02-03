@@ -220,7 +220,7 @@ namespace AdditionalAccessoryControls
 
         private bool CheckAndLinkDynamicBone(GameObject go, List<Transform> parentTransforms)
         {
-            if (go == null)
+            if (!go)
                 return false;
 
             DynamicBone[] bones = go.GetComponents<DynamicBone>();
@@ -353,7 +353,7 @@ namespace AdditionalAccessoryControls
         {
             try
             {
-                if (!this.enabled || this.gameObject == null)
+                if (!this.enabled || !this.gameObject)
                     return;
 
                 gameObject.transform.localPosition = Vector3.zero;
@@ -375,7 +375,7 @@ namespace AdditionalAccessoryControls
         {
             try
             {
-                if (!this.enabled || this.gameObject == null)
+                if (!this.enabled || !this.gameObject)
                     return;
 
                 if (LinkParent != null && parentTransform == null)

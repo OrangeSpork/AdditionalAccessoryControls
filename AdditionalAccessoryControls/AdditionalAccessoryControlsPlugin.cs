@@ -28,7 +28,7 @@ namespace AdditionalAccessoryControls
 
         public const string GUID = "orange.spork.additionalaccessorycontrolsplugin";
         public const string PluginName = "Additional Accessory Controls";
-        public const string Version = "1.2.5";
+        public const string Version = "1.2.6";
 
         public static AdditionalAccessoryControlsPlugin Instance { get; set; }  // Me
 

@@ -278,7 +278,7 @@ namespace AdditionalAccessoryControls
         {
             try
             {                
-                if (gameObject == null || !gameObject.activeInHierarchy)
+                if (!gameObject || !gameObject.activeInHierarchy)
                 {
                     return;
                 }
